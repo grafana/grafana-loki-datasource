@@ -62,7 +62,7 @@ import { LokiVariableSupport } from './LokiVariableSupport';
 import { transformBackendResult } from './backendResultTransformer';
 import { LokiAnnotationsQueryEditor } from './components/AnnotationsQueryEditor';
 import { placeHolderScopedVars } from './components/monaco-query-field/monaco-completion-provider/validation';
-import { LokiQueryType, SupportingQueryType } from './dataquery.gen';
+import { LokiQueryType, SupportingQueryType } from './dataquery';
 import { escapeLabelValueInSelector, getLokiLabelTypeFromFrame, isRegexSelector } from './languageUtils';
 import { labelNamesRegex, labelValuesRegex } from './migrations/variableQueryMigrations';
 import {

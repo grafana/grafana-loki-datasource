@@ -7,7 +7,7 @@ import {
   type DataQueryError,
 } from '@grafana/data';
 
-import { LokiQueryType } from './dataquery.gen';
+import { LokiQueryType } from './dataquery';
 import { getDerivedFields } from './getDerivedFields';
 import { makeTableFrames } from './makeTableFrames';
 import { getExpressionFromExecutedQuery, getHighlighterExpressionsFromQuery } from './queryUtils';

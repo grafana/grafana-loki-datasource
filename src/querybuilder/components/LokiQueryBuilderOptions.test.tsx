@@ -4,7 +4,7 @@ import userEvent from '@testing-library/user-event';
 import { CoreApp, LogSortOrderChangeEvent, LogsSortOrder, store } from '@grafana/data';
 import { config, getAppEvents } from '@grafana/runtime';
 
-import { LokiQueryType, LokiQueryDirection } from '../../dataquery.gen';
+import { LokiQueryType, LokiQueryDirection } from '../../dataquery';
 import { createLokiDatasource } from '../../mocks/datasource';
 import { type LokiQuery } from '../../types';
 

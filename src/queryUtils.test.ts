@@ -1,6 +1,6 @@
 import { String } from '@grafana/lezer-logql';
 
-import { LokiQueryType, LokiQueryDirection } from './dataquery.gen';
+import { LokiQueryType, LokiQueryDirection } from './dataquery';
 import {
   getHighlighterExpressionsFromQuery,
   getLokiQueryType,

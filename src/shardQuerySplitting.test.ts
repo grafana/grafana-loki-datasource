@@ -3,7 +3,7 @@ import { of } from 'rxjs';
 import { type DataQueryRequest, type DataQueryResponse, dateTime, LoadingState } from '@grafana/data';
 import { config } from '@grafana/runtime';
 
-import { LokiQueryDirection, LokiQueryType } from './dataquery.gen';
+import { LokiQueryDirection, LokiQueryType } from './dataquery';
 import { type LokiDatasource } from './datasource';
 import { createLokiDatasource } from './mocks/datasource';
 import { getMockFrames } from './mocks/frames';

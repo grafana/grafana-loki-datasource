@@ -2,7 +2,7 @@ import { CoreApp, type DashboardLoadedEvent, type DataQueryRequest, type DataQue
 import { QueryEditorMode } from '@grafana/plugin-ui';
 import { reportInteraction, config } from '@grafana/runtime';
 
-import { LokiQueryType } from './dataquery.gen';
+import { LokiQueryType } from './dataquery';
 import {
   REF_ID_STARTER_ANNOTATION,
   REF_ID_DATA_SAMPLES,

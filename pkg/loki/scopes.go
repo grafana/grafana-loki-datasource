@@ -10,7 +10,7 @@ import (
 	"github.com/grafana/grafana-plugin-sdk-go/backend"
 	"github.com/grafana/grafana-prometheus-datasource/pkg/promlib/models"
 	scope "github.com/grafana/grafana/apps/scope/pkg/apis/scope/v0alpha1"
-	"github.com/grafana/grafana/pkg/tsdb/loki/kinds/dataquery"
+	"github.com/grafana/grafana-loki-datasource/pkg/loki/kinds/dataquery"
 	"github.com/grafana/loki/v3/pkg/logql/syntax"
 	"github.com/prometheus/prometheus/promql/parser"
 )

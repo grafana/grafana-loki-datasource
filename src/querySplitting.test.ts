@@ -9,7 +9,7 @@ import {
 } from '@grafana/data';
 import { config } from '@grafana/runtime';
 
-import { LokiQueryType, LokiQueryDirection } from './dataquery.gen';
+import { LokiQueryType, LokiQueryDirection } from './dataquery';
 import { type LokiDatasource } from './datasource';
 import { createLokiDatasource } from './mocks/datasource';
 import { getMockFrames } from './mocks/frames';

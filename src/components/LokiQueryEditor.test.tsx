@@ -6,7 +6,7 @@ import { CoreApp } from '@grafana/data';
 import { QueryEditorMode } from '@grafana/plugin-ui';
 import { config } from '@grafana/runtime';
 
-import { LokiQueryType } from '../dataquery.gen';
+import { LokiQueryType } from '../dataquery';
 import { createLokiDatasource } from '../mocks/datasource';
 import { EXPLAIN_LABEL_FILTER_CONTENT } from '../querybuilder/components/LokiQueryBuilderExplained';
 import { type LokiQuery } from '../types';

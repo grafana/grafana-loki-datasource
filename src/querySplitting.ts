@@ -15,7 +15,7 @@ import {
 } from '@grafana/data';
 import { config } from '@grafana/runtime';
 
-import { LokiQueryType, LokiQueryDirection } from './dataquery.gen';
+import { LokiQueryType, LokiQueryDirection } from './dataquery';
 import { type LokiDatasource } from './datasource';
 import {
   splitTimeRange as splitLogsTimeRange,

@@ -14,7 +14,7 @@ import {
   queryTypeOptions,
 } from '../../components/LokiOptionFields';
 import { placeHolderScopedVars } from '../../components/monaco-query-field/monaco-completion-provider/validation';
-import { LokiQueryDirection, LokiQueryType } from '../../dataquery.gen';
+import { LokiQueryDirection, LokiQueryType } from '../../dataquery';
 import { type LokiDatasource } from '../../datasource';
 import { getLokiQueryType, isLogsQuery } from '../../queryUtils';
 import { type LokiQuery, type QueryStats } from '../../types';

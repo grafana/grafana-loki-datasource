@@ -11,7 +11,7 @@ import {
 } from '@grafana/data';
 import { type BackendSrvRequest, config } from '@grafana/runtime';
 
-import { LokiQueryType } from './dataquery.gen';
+import { LokiQueryType } from './dataquery';
 import { DEFAULT_MAX_LINES_SAMPLE, type LokiDatasource } from './datasource';
 import { abstractQueryToExpr, mapAbstractOperatorsToOp, processLabels } from './languageUtils';
 import { getStreamSelectorsFromQuery } from './queryUtils';

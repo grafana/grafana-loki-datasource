@@ -5,20 +5,14 @@ import (
 	"testing"
 
 	"github.com/grafana/grafana-plugin-sdk-go/backend"
-	"github.com/grafana/grafana-plugin-sdk-go/backend/datasource"
 	"github.com/grafana/grafana-plugin-sdk-go/backend/httpclient"
-	"github.com/grafana/grafana-plugin-sdk-go/backend/tracing"
 	"github.com/grafana/grafana-plugin-sdk-go/experimental/featuretoggles"
 	"github.com/stretchr/testify/require"
 )
 
 func TestSubscribeStream(t *testing.T) {
 	// Create a service instance with required dependencies
-	service := &Service{
-		im:     datasource.NewInstanceManager(newInstanceSettings(httpclient.NewProvider())),
-		tracer: tracing.DefaultTracer(),
-		logger: backend.NewLoggerWith("logger", "loki test"),
-	}
+	service := newTestDataSource(httpclient.NewProvider(), "http://localhost:3100")
 
 	// Create a test request
 	req := &backend.SubscribeStreamRequest{

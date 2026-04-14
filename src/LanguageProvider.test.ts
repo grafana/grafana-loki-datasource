@@ -2,7 +2,7 @@ import { AbstractLabelOperator, type DataFrame, type TimeRange, dateTime, type S
 import { config } from '@grafana/runtime';
 
 import LanguageProvider from './LanguageProvider';
-import { LokiQueryType } from './dataquery.gen';
+import { LokiQueryType } from './dataquery';
 import { DEFAULT_MAX_LINES_SAMPLE, type LokiDatasource } from './datasource';
 import { createDetectedFieldValuesMetadataRequest } from './mocks/createDetectedFieldValuesMetadataRequest';
 import { createDetectedFieldsMetadataRequest } from './mocks/createDetectedFieldsMetadataRequest';

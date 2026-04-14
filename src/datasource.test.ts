@@ -33,7 +33,7 @@ import {
 } from '@grafana/runtime';
 
 import { LokiVariableSupport } from './LokiVariableSupport';
-import { LokiQueryType, SupportingQueryType } from './dataquery.gen';
+import { LokiQueryType, SupportingQueryType } from './dataquery';
 import { type LokiDatasource, REF_ID_DATA_SAMPLES } from './datasource';
 import { createLokiDatasource } from './mocks/datasource';
 import { createMetadataRequest } from './mocks/metadataRequest';

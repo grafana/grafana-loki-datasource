@@ -5,7 +5,7 @@ import (
 
 	scope "github.com/grafana/grafana/apps/scope/pkg/apis/scope/v0alpha1"
 
-	"github.com/grafana/grafana/pkg/tsdb/loki/kinds/dataquery"
+	"github.com/grafana/grafana-loki-datasource/pkg/loki/kinds/dataquery"
 )
 
 type QueryType = dataquery.LokiQueryType

@@ -9,12 +9,24 @@ import (
 	"time"
 
 	"github.com/grafana/grafana-plugin-sdk-go/backend"
-	"github.com/grafana/grafana-plugin-sdk-go/backend/datasource"
 	"github.com/grafana/grafana-plugin-sdk-go/backend/httpclient"
-
 	"github.com/grafana/grafana-plugin-sdk-go/backend/tracing"
+	"github.com/grafana/grafana-plugin-sdk-go/data"
 	"github.com/stretchr/testify/assert"
 )
+
+func newTestDataSource(httpProvider *httpclient.Provider, url string) *DataSource {
+	client, _ := httpProvider.New(httpclient.Options{})
+	return &DataSource{
+		info: &datasourceInfo{
+			HTTPClient: client,
+			URL:        url,
+			streams:    make(map[string]data.FrameJSONCache),
+		},
+		tracer: tracing.DefaultTracer(),
+		logger: backend.NewLoggerWith("logger", "loki test"),
+	}
+}
 
 type healthCheckProvider[T http.RoundTripper] struct {
 	httpclient.Provider
@@ -91,11 +103,7 @@ func getMockProvider[T http.RoundTripper]() *httpclient.Provider {
 func Test_healthcheck(t *testing.T) {
 	t.Run("should do a successful health check", func(t *testing.T) {
 		httpProvider := getMockProvider[*healthCheckSuccessRoundTripper]()
-		s := &Service{
-			im:     datasource.NewInstanceManager(newInstanceSettings(httpProvider)),
-			tracer: tracing.DefaultTracer(),
-			logger: backend.NewLoggerWith("logger", "loki test"),
-		}
+		s := newTestDataSource(httpProvider, "http://loki:3100")
 
 		req := &backend.CheckHealthRequest{
 			PluginContext: getPluginContext(),
@@ -109,11 +117,7 @@ func Test_healthcheck(t *testing.T) {
 
 	t.Run("should return an error for an unsuccessful health check", func(t *testing.T) {
 		httpProvider := getMockProvider[*healthCheckFailRoundTripper]()
-		s := &Service{
-			im:     datasource.NewInstanceManager(newInstanceSettings(httpProvider)),
-			tracer: tracing.DefaultTracer(),
-			logger: backend.NewLoggerWith("logger", "loki test"),
-		}
+		s := newTestDataSource(httpProvider, "http://loki:3100")
 
 		req := &backend.CheckHealthRequest{
 			PluginContext: getPluginContext(),

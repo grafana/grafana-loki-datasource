@@ -29,7 +29,7 @@ import {
 } from '@grafana/lezer-logql';
 import { type DataQuery } from '@grafana/schema';
 
-import { LokiQueryType, LokiQueryDirection } from './dataquery.gen';
+import { LokiQueryType, LokiQueryDirection } from './dataquery';
 import { addDropToQuery, addLabelToQuery, getStreamSelectorPositions, NodePosition } from './modifyQuery';
 import { ErrorId } from './querybuilder/parsingUtils';
 import { LabelType, type LokiQuery } from './types';

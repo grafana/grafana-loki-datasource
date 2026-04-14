@@ -3,39 +3,27 @@ package loki
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"time"
 
 	"github.com/grafana/grafana-plugin-sdk-go/backend"
 	"github.com/grafana/grafana-plugin-sdk-go/backend/log"
 
-	"github.com/grafana/grafana/pkg/tsdb/loki/kinds/dataquery"
+	"github.com/grafana/grafana-loki-datasource/pkg/loki/kinds/dataquery"
 )
 
 const (
 	refID = "__healthcheck__"
 )
 
-func (s *Service) CheckHealth(ctx context.Context, req *backend.CheckHealthRequest) (*backend.CheckHealthResult,
+func (ds *DataSource) CheckHealth(ctx context.Context, req *backend.CheckHealthRequest) (*backend.CheckHealthResult,
 	error) {
-	logger := s.logger.With("endpoint", "checkHealth")
-	ds, err := s.im.Get(ctx, req.PluginContext)
-	// check that the datasource exists
-	if err != nil {
-		return getHealthCheckMessage(fmt.Errorf("failed to get datasource information: %w", err), logger), err
-	}
-
-	if ds == nil {
-		return getHealthCheckMessage(errors.New("invalid datasource info received"), logger), err
-	}
-
-	hc := healthcheck(ctx, req, s, logger)
-
+	logger := ds.logger.With("endpoint", "checkHealth")
+	hc := healthcheck(ctx, req, ds, logger)
 	return hc, nil
 }
 
-func healthcheck(ctx context.Context, req *backend.CheckHealthRequest, s *Service, logger log.Logger) *backend.CheckHealthResult {
+func healthcheck(ctx context.Context, req *backend.CheckHealthRequest, ds *DataSource, logger log.Logger) *backend.CheckHealthResult {
 	step := "1s"
 	qt := "instant"
 	qm := dataquery.LokiDataQuery{
@@ -53,7 +41,7 @@ func healthcheck(ctx context.Context, req *backend.CheckHealthRequest, s *Servic
 		},
 		JSON: b,
 	}
-	resp, err := s.QueryData(ctx, &backend.QueryDataRequest{
+	resp, err := ds.QueryData(ctx, &backend.QueryDataRequest{
 		PluginContext: req.PluginContext,
 		Queries:       []backend.DataQuery{query},
 	})

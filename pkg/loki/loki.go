@@ -12,18 +12,17 @@ import (
 
 	"github.com/grafana/dskit/concurrency"
 	"github.com/grafana/grafana-plugin-sdk-go/backend"
-	"github.com/grafana/grafana-plugin-sdk-go/backend/datasource"
+	"github.com/grafana/grafana-plugin-sdk-go/backend/httpclient"
 	"github.com/grafana/grafana-plugin-sdk-go/backend/instancemgmt"
 	"github.com/grafana/grafana-plugin-sdk-go/backend/log"
+	"github.com/grafana/grafana-plugin-sdk-go/backend/tracing"
 	"github.com/grafana/grafana-plugin-sdk-go/data"
+	scope "github.com/grafana/grafana/apps/scope/pkg/apis/scope/v0alpha1"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/trace"
 
-	"github.com/grafana/grafana-plugin-sdk-go/backend/httpclient"
-	scope "github.com/grafana/grafana/apps/scope/pkg/apis/scope/v0alpha1"
-
-	"github.com/grafana/grafana/pkg/tsdb/loki/kinds/dataquery"
+	"github.com/grafana/grafana-loki-datasource/pkg/loki/kinds/dataquery"
 )
 
 const (
@@ -34,24 +33,42 @@ const (
 	fromAlertHeaderName           = "FromAlert"
 )
 
-type Service struct {
-	im     instancemgmt.InstanceManager
+type DataSource struct {
+	info   *datasourceInfo
 	tracer trace.Tracer
 	logger log.Logger
 }
 
 var (
-	_ backend.QueryDataHandler    = (*Service)(nil)
-	_ backend.StreamHandler       = (*Service)(nil)
-	_ backend.CallResourceHandler = (*Service)(nil)
+	_ backend.QueryDataHandler    = (*DataSource)(nil)
+	_ backend.StreamHandler       = (*DataSource)(nil)
+	_ backend.CallResourceHandler = (*DataSource)(nil)
 )
 
-func ProvideService(httpClientProvider *httpclient.Provider, tracer trace.Tracer) *Service {
-	return &Service{
-		im:     datasource.NewInstanceManager(newInstanceSettings(httpClientProvider)),
+func NewDatasource(ctx context.Context, settings backend.DataSourceInstanceSettings) (instancemgmt.Instance, error) {
+	tracer := tracing.DefaultTracer()
+
+	opts, err := settings.HTTPClientOptions(ctx)
+	if err != nil {
+		return nil, backend.DownstreamError(fmt.Errorf("error reading settings: %w", err))
+	}
+	opts.ForwardHTTPHeaders = true
+
+	httpClientProvider := httpclient.NewProvider()
+	client, err := httpClientProvider.New(opts)
+	if err != nil {
+		return nil, backend.DownstreamError(fmt.Errorf("error creating http client: %w", err))
+	}
+
+	return &DataSource{
+		info: &datasourceInfo{
+			HTTPClient: client,
+			URL:        settings.URL,
+			streams:    make(map[string]data.FrameJSONCache),
+		},
 		tracer: tracer,
 		logger: backend.NewLoggerWith("logger", "tsdb.loki"),
-	}
+	}, nil
 }
 
 var (
@@ -91,36 +108,9 @@ func parseQueryModel(raw json.RawMessage) (*QueryJSONModel, error) {
 	return model, nil
 }
 
-func newInstanceSettings(httpClientProvider *httpclient.Provider) datasource.InstanceFactoryFunc {
-	return func(ctx context.Context, settings backend.DataSourceInstanceSettings) (instancemgmt.Instance, error) {
-		opts, err := settings.HTTPClientOptions(ctx)
-		if err != nil {
-			return nil, backend.DownstreamError(fmt.Errorf("error reading settings: %w", err))
-		}
-		opts.ForwardHTTPHeaders = true
-
-		client, err := httpClientProvider.New(opts)
-		if err != nil {
-			return nil, backend.DownstreamError(fmt.Errorf("error creating http client: %w", err))
-		}
-
-		model := &datasourceInfo{
-			HTTPClient: client,
-			URL:        settings.URL,
-			streams:    make(map[string]data.FrameJSONCache),
-		}
-		return model, nil
-	}
-}
-
-func (s *Service) CallResource(ctx context.Context, req *backend.CallResourceRequest, sender backend.CallResourceResponseSender) error {
-	dsInfo, err := s.getDSInfo(ctx, req.PluginContext)
-	logger := s.logger.FromContext(ctx)
-	if err != nil {
-		logger.Error("Failed to get data source info", "error", err)
-		return err
-	}
-	return callResource(ctx, req, sender, dsInfo, logger, s.tracer)
+func (ds *DataSource) CallResource(ctx context.Context, req *backend.CallResourceRequest, sender backend.CallResourceResponseSender) error {
+	logger := ds.logger.FromContext(ctx)
+	return callResource(ctx, req, sender, ds.info, logger, ds.tracer)
 }
 
 func callResource(ctx context.Context, req *backend.CallResourceRequest, sender backend.CallResourceResponseSender, dsInfo *datasourceInfo, plog log.Logger, tracer trace.Tracer) error {
@@ -179,20 +169,15 @@ func callResource(ctx context.Context, req *backend.CallResourceRequest, sender 
 	})
 }
 
-func (s *Service) QueryData(ctx context.Context, req *backend.QueryDataRequest) (*backend.QueryDataResponse, error) {
-	dsInfo, err := s.getDSInfo(ctx, req.PluginContext)
+func (ds *DataSource) QueryData(ctx context.Context, req *backend.QueryDataRequest) (*backend.QueryDataResponse, error) {
 	_, fromAlert := req.Headers[fromAlertHeaderName]
-	logger := s.logger.FromContext(ctx).With("fromAlert", fromAlert)
-	if err != nil {
-		logger.Debug("Failed to get data source info", "err", err)
-		return nil, err
-	}
+	logger := ds.logger.FromContext(ctx).With("fromAlert", fromAlert)
 
 	responseOpts := ResponseOpts{
 		logsDataplane: isFeatureEnabled(ctx, flagLokiLogsDataplane),
 	}
 
-	return queryData(ctx, req, dsInfo, responseOpts, s.tracer, logger, isFeatureEnabled(ctx, flagLokiRunQueriesInParallel), isFeatureEnabled(ctx, flagLogQLScope))
+	return queryData(ctx, req, ds.info, responseOpts, ds.tracer, logger, isFeatureEnabled(ctx, flagLokiRunQueriesInParallel), isFeatureEnabled(ctx, flagLogQLScope))
 }
 
 func queryData(ctx context.Context, req *backend.QueryDataRequest, dsInfo *datasourceInfo, responseOpts ResponseOpts, tracer trace.Tracer, plog log.Logger, runInParallel bool, logQLScopes bool) (*backend.QueryDataResponse, error) {
@@ -294,19 +279,6 @@ func runQuery(ctx context.Context, api *LokiAPI, query *lokiQuery, responseOpts 
 	return res, nil
 }
 
-func (s *Service) getDSInfo(ctx context.Context, pluginCtx backend.PluginContext) (*datasourceInfo, error) {
-	i, err := s.im.Get(ctx, pluginCtx)
-	if err != nil {
-		return nil, backend.DownstreamError(fmt.Errorf("failed to get data source info: %w", err))
-	}
-
-	instance, ok := i.(*datasourceInfo)
-	if !ok {
-		return nil, backend.DownstreamError(fmt.Errorf("failed to cast data source info"))
-	}
-
-	return instance, nil
-}
 
 func isFeatureEnabled(ctx context.Context, feature string) bool {
 	return backend.GrafanaConfigFromContext(ctx).FeatureToggles().IsEnabled(feature)

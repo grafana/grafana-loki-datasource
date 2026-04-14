@@ -5,7 +5,7 @@ import {
   type LokiQueryType,
   type SupportingQueryType,
   type LokiQueryDirection,
-} from './dataquery.gen';
+} from './dataquery';
 
 // @todo import from core
 export const DATAPLANE_LABEL_TYPES_NAME = 'labelTypes';

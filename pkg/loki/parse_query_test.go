@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/grafana/grafana-plugin-sdk-go/backend"
-	"github.com/grafana/grafana/pkg/tsdb/loki/kinds/dataquery"
+	"github.com/grafana/grafana-loki-datasource/pkg/loki/kinds/dataquery"
 	"github.com/stretchr/testify/require"
 )
 

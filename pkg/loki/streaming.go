@@ -15,19 +15,14 @@ import (
 	"github.com/grafana/grafana-plugin-sdk-go/data"
 )
 
-func (s *Service) SubscribeStream(ctx context.Context, req *backend.SubscribeStreamRequest) (*backend.SubscribeStreamResponse, error) {
+func (ds *DataSource) SubscribeStream(ctx context.Context, req *backend.SubscribeStreamRequest) (*backend.SubscribeStreamResponse, error) {
 	if !isFeatureEnabled(ctx, flagLokiExperimentalStreaming) {
 		return &backend.SubscribeStreamResponse{
 			Status: backend.SubscribeStreamStatusPermissionDenied,
 		}, fmt.Errorf("streaming is not supported")
 	}
 
-	dsInfo, err := s.getDSInfo(ctx, req.PluginContext)
-	if err != nil {
-		return &backend.SubscribeStreamResponse{
-			Status: backend.SubscribeStreamStatusNotFound,
-		}, err
-	}
+	dsInfo := ds.info
 
 	// Expect tail/${key}
 	if !strings.HasPrefix(req.Path, "tail/") {
@@ -65,11 +60,8 @@ func (s *Service) SubscribeStream(ctx context.Context, req *backend.SubscribeStr
 }
 
 // Single instance for each channel (results are shared with all listeners)
-func (s *Service) RunStream(ctx context.Context, req *backend.RunStreamRequest, sender *backend.StreamSender) error {
-	dsInfo, err := s.getDSInfo(ctx, req.PluginContext)
-	if err != nil {
-		return err
-	}
+func (ds *DataSource) RunStream(ctx context.Context, req *backend.RunStreamRequest, sender *backend.StreamSender) error {
+	dsInfo := ds.info
 
 	query, err := parseQueryModel(req.Data)
 	if err != nil {
@@ -79,7 +71,7 @@ func (s *Service) RunStream(ctx context.Context, req *backend.RunStreamRequest, 
 		return fmt.Errorf("missing expr in cuannel")
 	}
 
-	logger := s.logger.FromContext(ctx)
+	logger := ds.logger.FromContext(ctx)
 	count := int64(0)
 
 	interrupt := make(chan os.Signal, 1)
@@ -173,7 +165,7 @@ func (s *Service) RunStream(ctx context.Context, req *backend.RunStreamRequest, 
 	}
 }
 
-func (s *Service) PublishStream(_ context.Context, _ *backend.PublishStreamRequest) (*backend.PublishStreamResponse, error) {
+func (ds *DataSource) PublishStream(_ context.Context, _ *backend.PublishStreamRequest) (*backend.PublishStreamResponse, error) {
 	return &backend.PublishStreamResponse{
 		Status: backend.PublishStreamStatusPermissionDenied,
 	}, nil
