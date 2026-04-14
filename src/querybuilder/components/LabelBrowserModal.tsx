@@ -1,4 +1,5 @@
-import React, { css } from '@emotion/css';
+import React from 'react';
+import { css } from '@emotion/css';
 import { useState, useEffect } from 'react';
 
 import { type CoreApp, type GrafanaTheme2, LocalStorageValueProvider, type TimeRange } from '@grafana/data';
