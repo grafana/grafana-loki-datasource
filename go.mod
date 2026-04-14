@@ -9,7 +9,7 @@ replace (
 
 require (
 	github.com/gorilla/websocket v1.5.4-0.20250319132907-e064f32e3674
-	github.com/grafana/dskit v0.0.0-20260108123158-1a1acfb6ef2e
+	github.com/grafana/dskit f8fd8e188362
 	github.com/grafana/grafana-plugin-sdk-go v0.291.1
 	github.com/grafana/grafana-prometheus-datasource/pkg/promlib v0.0.10
 	github.com/grafana/grafana/apps/scope v0.0.0-20260414094027-5783575f79d4
