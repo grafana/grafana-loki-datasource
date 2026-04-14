@@ -1,4 +1,4 @@
-import { css } from '@emotion/css';
+import React, { css } from '@emotion/css';
 import { shuffle } from 'lodash';
 import { PureComponent } from 'react';
 

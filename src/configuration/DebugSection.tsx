@@ -1,4 +1,4 @@
-import { type ReactNode, useState } from 'react';
+import React, { type ReactNode, useState } from 'react';
 
 import { getTemplateSrv } from '@grafana/runtime';
 import { InlineField, TextArea } from '@grafana/ui';

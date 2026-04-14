@@ -1,5 +1,5 @@
-import { memo } from 'react';
 import * as React from 'react';
+import { memo } from 'react';
 
 import { type SelectableValue } from '@grafana/data';
 import { config, reportInteraction } from '@grafana/runtime';

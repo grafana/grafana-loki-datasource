@@ -1,4 +1,4 @@
-import { lazy, Suspense } from 'react';
+import React, { lazy, Suspense } from 'react';
 
 import { type Props } from './MonacoQueryFieldProps';
 

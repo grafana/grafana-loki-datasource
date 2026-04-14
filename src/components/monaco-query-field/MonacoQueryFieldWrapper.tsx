@@ -1,4 +1,4 @@
-import { useRef } from 'react';
+import React, { useRef } from 'react';
 
 import { MonacoQueryFieldLazy } from './MonacoQueryFieldLazy';
 import { type Props as MonacoProps } from './MonacoQueryFieldProps';

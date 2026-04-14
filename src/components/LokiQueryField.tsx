@@ -1,4 +1,4 @@
-import { PureComponent, type ReactNode } from 'react';
+import React, { PureComponent, type ReactNode } from 'react';
 
 import { type QueryEditorProps } from '@grafana/data';
 

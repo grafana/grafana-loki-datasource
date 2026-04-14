@@ -1,4 +1,4 @@
-import { memo } from 'react';
+import React, { memo } from 'react';
 
 import { OperationExplainedBox, OperationListExplained, RawQuery } from '@grafana/plugin-ui';
 import { Stack } from '@grafana/ui';

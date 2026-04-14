@@ -1,3 +1,4 @@
+import React from 'react';
 import { Stack } from '@grafana/ui';
 
 import { type LokiDatasource } from '../../datasource';

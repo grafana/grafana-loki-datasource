@@ -1,3 +1,4 @@
+import React from 'react';
 import { Stack } from '@grafana/ui';
 
 import { testIds } from '../../components/LokiQueryEditor';

@@ -1,4 +1,4 @@
-import { createSlice, type PayloadAction } from '@reduxjs/toolkit';
+import React, { createSlice, type PayloadAction } from '@reduxjs/toolkit';
 import { useEffect, useReducer } from 'react';
 
 import { type TimeRange } from '@grafana/data';

@@ -1,3 +1,4 @@
+import React from 'react';
 import { LokiQueryField } from './LokiQueryField';
 import { type LokiQueryEditorProps } from './types';
 
