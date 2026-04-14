@@ -4,7 +4,7 @@ go 1.25.9
 
 replace (
 	github.com/grafana/gomemcache => github.com/grafana/gomemcache v0.0.0-20250318131618-74242eea118d
-	github.com/hashicorp/memberlist => github.com/grafana/memberlist v0.3.1-0.20251126142931-6f9f62ab6f86
+	github.com/hashicorp/memberlist => github.com/grafana/memberlist 4887d8e8d493
 )
 
 require (
