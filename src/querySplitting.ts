@@ -42,7 +42,7 @@ export function partitionTimeRange(
 
   let ranges: Array<[number, number]>;
 
-  if (config.featureToggles.lokiAlignedQuerySplitting) {
+  if (config.featureToggles.lokiQuerySplitting) {
     ranges = isLogsQuery
       ? splitLogsTimeRangeAligned(originalTimeRange)
       : splitMetricTimeRangeAligned(originalTimeRange, stepMs);

@@ -1,4 +1,4 @@
-import React, { type FormEvent, useState, useEffect } from 'react';
+import { type FormEvent, useState, useEffect } from 'react';
 import { usePrevious } from 'react-use';
 
 import { type QueryEditorProps, type SelectableValue } from '@grafana/data';
