@@ -1,4 +1,4 @@
-import React, { memo } from 'react';
+import { memo } from 'react';
 
 import { type AnnotationQuery } from '@grafana/data';
 import { EditorField, EditorRow } from '@grafana/plugin-ui';

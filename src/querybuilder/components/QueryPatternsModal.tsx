@@ -1,4 +1,3 @@
-import React from 'react';
 import { css } from '@emotion/css';
 import { capitalize } from 'lodash';
 import { useMemo, useState } from 'react';

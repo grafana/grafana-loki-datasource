@@ -1,4 +1,3 @@
-import React from 'react';
 import { css } from '@emotion/css';
 import { debounce } from 'lodash';
 import { useRef, useEffect } from 'react';

@@ -1,4 +1,3 @@
-import React from 'react';
 import { EditorRow, EditorFieldGroup, RawQuery } from '@grafana/plugin-ui';
 
 import { lokiGrammar } from '../../syntax';
