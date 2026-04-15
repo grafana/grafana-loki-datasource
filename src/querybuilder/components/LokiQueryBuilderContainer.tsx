@@ -1,4 +1,3 @@
-import React from 'react';
 import { createSlice, type PayloadAction } from '@reduxjs/toolkit';
 import { useEffect, useReducer } from 'react';
 

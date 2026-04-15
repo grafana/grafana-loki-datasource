@@ -63,10 +63,10 @@ export const DerivedField = (props: Props) => {
   // Force internal link visibility change if uid changed outside of this component.
   useEffect(() => {
     if (!previousUid && value.datasourceUid && !showInternalLink) {
-      setShowInternalLink(true);
+      setShowInternalLink(true); // eslint-disable-line react-hooks/set-state-in-effect
     }
     if (previousUid && !value.datasourceUid && showInternalLink) {
-      setShowInternalLink(false);
+      setShowInternalLink(false); // eslint-disable-line react-hooks/set-state-in-effect
     }
   }, [previousUid, value.datasourceUid, showInternalLink]);
 

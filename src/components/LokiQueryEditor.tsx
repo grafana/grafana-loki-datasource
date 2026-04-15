@@ -1,4 +1,3 @@
-import React from 'react';
 import { isEqual } from 'lodash';
 import { memo, type SyntheticEvent, useCallback, useEffect, useId, useState } from 'react';
 import { usePrevious } from 'react-use';
@@ -86,6 +85,7 @@ export const LokiQueryEditor = memo<LokiQueryEditorProps>((props) => {
   );
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setDataIsStale(false);
   }, [data]);
 

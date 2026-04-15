@@ -30,9 +30,9 @@ export const LokiVariableQueryEditor = ({ onChange, query, datasource, range }: 
     }
 
     const variableQuery = typeof query === 'string' ? migrateVariableQuery(query) : query;
-    setType(variableQuery.type);
-    setLabel(variableQuery.label || '');
-    setStream(variableQuery.stream || '');
+    setType(variableQuery.type); // eslint-disable-line react-hooks/set-state-in-effect
+    setLabel(variableQuery.label || ''); // eslint-disable-line react-hooks/set-state-in-effect
+    setStream(variableQuery.stream || ''); // eslint-disable-line react-hooks/set-state-in-effect
   }, [query]);
 
   useEffect(() => {

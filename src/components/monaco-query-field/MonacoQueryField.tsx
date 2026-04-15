@@ -1,4 +1,3 @@
-import React from 'react';
 import { css } from '@emotion/css';
 import { debounce } from 'lodash';
 import { useRef, useEffect } from 'react';
@@ -181,6 +180,7 @@ const MonacoQueryField = ({
       ref={containerRef}
     >
       <ReactMonacoEditor
+        // eslint-disable-next-line react-hooks/refs
         overrideServices={overrideServicesRef.current}
         options={options}
         language={LANG_ID}

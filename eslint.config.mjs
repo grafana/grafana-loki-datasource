@@ -14,4 +14,10 @@ export default defineConfig([
     ],
   },
   ...baseConfig,
+  {
+    rules: {
+      // React 17+ new JSX transform doesn't require React in scope
+      'react/react-in-jsx-scope': 'off',
+    },
+  },
 ]);

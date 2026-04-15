@@ -1,4 +1,3 @@
-import React from 'react';
 import { type DataSourcePluginOptionsEditorProps, type DataSourceSettings } from '@grafana/data';
 import {
   ConfigSection,
