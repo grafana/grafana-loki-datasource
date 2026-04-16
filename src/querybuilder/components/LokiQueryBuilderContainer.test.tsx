@@ -42,7 +42,11 @@ describe('LokiQueryBuilderContainer', () => {
       onRunQuery: () => {},
       showExplain: false,
     };
-    props.datasource.getDataSamples = jest.fn().mockResolvedValue([]);
+    // Use a never-resolving Promise so getDataSamples never calls setSampleData.
+    // mockResolvedValue([]) causes setSampleData to run outside act() on every query
+    // change (6+ times in this test), producing spurious React act-environment warnings
+    // and extra microtask contention that makes each findByText take much longer in CI.
+    props.datasource.getDataSamples = jest.fn().mockReturnValue(new Promise(() => {}));
     props.datasource.languageProvider.fetchLabels = jest.fn().mockReturnValue(['job']);
     props.datasource.languageProvider.fetchLabelValues = jest.fn().mockReturnValue(['grafana', 'loki']);
     props.onChange = jest.fn();
