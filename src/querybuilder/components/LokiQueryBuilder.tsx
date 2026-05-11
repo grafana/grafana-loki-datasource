@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { memo, useEffect, useMemo, useState } from 'react';
 import { isEqual } from 'lodash';
-import { memo, useEffect, useMemo, useState } from 'react';
+
 import { usePrevious } from 'react-use';
 
 import {

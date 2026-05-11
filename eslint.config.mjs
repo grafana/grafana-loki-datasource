@@ -14,4 +14,14 @@ export default defineConfig([
     ],
   },
   ...baseConfig,
+  {
+    // TODO: re-enable and refactor the affected components (LokiQueryEditor,
+    // VariableQueryEditor, DerivedField, MonacoQueryField). These rules ship
+    // with the React Compiler hooks plugin and flag pre-existing patterns
+    // inherited from grafana/grafana that work correctly today.
+    rules: {
+      'react-hooks/set-state-in-effect': 'off',
+      'react-hooks/refs': 'off',
+    },
+  },
 ]);

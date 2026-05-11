@@ -1,5 +1,5 @@
 import { render, screen, waitFor } from '@testing-library/react';
-import { type ComponentProps } from 'react';
+import React, { type ComponentProps } from 'react';
 
 import { dateTime } from '@grafana/data';
 

@@ -144,7 +144,6 @@ export const mapOpToAbstractOp: Record<AbstractLabelOperator, string> = {
   [AbstractLabelOperator.NotEqualRegEx]: '!~',
 };
 
-// eslint-disable-next-line @typescript-eslint/consistent-type-assertions
 export const mapAbstractOperatorsToOp = invert(mapOpToAbstractOp) as Record<string, AbstractLabelOperator>;
 
 export function abstractQueryToExpr(labelBasedQuery: AbstractQuery): string {
