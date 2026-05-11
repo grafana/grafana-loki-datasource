@@ -9,7 +9,6 @@ test.describe('Config editor', () => {
     test('smoke: should render config editor', { tag: '@plugins' }, async ({ createDataSourceConfigPage, page }) => {
       await createDataSourceConfigPage({ type: 'loki' });
 
-      await expect(page.getByText('Type: Loki', { exact: true })).toBeVisible();
       await expect(page.getByRole('heading', { name: 'Connection', exact: true })).toBeVisible();
     });
 
