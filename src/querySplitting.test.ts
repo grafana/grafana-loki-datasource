@@ -25,7 +25,7 @@ jest.mock('uuid', () => ({
 
 const originalShardingFlagState = config.featureToggles.lokiShardSplitting;
 const originalLokiQueryLimitsContextState = config.featureToggles.lokiQueryLimitsContext;
-const originalLokiAlignedQuerySplitting = config.featureToggles.lokiAlignedQuerySplitting;
+const originalLokiAlignedQuerySplitting = (config.featureToggles as Record<string, boolean | undefined>).lokiAlignedQuerySplitting;
 const originalErr = console.error;
 beforeEach(() => {
   jest.spyOn(console, 'error').mockImplementation(() => {});
@@ -42,7 +42,7 @@ afterAll(() => {
   jest.mocked(global.setTimeout).mockReset();
   config.featureToggles.lokiShardSplitting = originalShardingFlagState;
   config.featureToggles.lokiQueryLimitsContext = originalLokiQueryLimitsContextState;
-  config.featureToggles.lokiAlignedQuerySplitting = originalLokiAlignedQuerySplitting;
+  (config.featureToggles as Record<string, boolean | undefined>).lokiAlignedQuerySplitting = originalLokiAlignedQuerySplitting;
   console.error = originalErr;
 });
 
@@ -69,7 +69,7 @@ describe.each([false, true])('runSplitQuery(aligned = %s)', (lokiAlignedQuerySpl
   };
   let globalRequest = createRequest([{ expr: 'count_over_time({a="b"}[1m])', refId: 'A' }]);
   beforeEach(() => {
-    config.featureToggles.lokiAlignedQuerySplitting = lokiAlignedQuerySplitting;
+    (config.featureToggles as Record<string, boolean | undefined>).lokiAlignedQuerySplitting = lokiAlignedQuerySplitting;
     globalRequest = createRequest([{ expr: 'count_over_time({a="b"}[1m])', refId: 'A' }]);
     datasource = createLokiDatasource();
     jest.spyOn(datasource, 'runQuery').mockReturnValue(of({ data: [] }));
