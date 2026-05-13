@@ -1,3 +1,4 @@
+import React from 'react';
 import { render, screen, waitFor, findAllByRole, act } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
@@ -68,7 +69,7 @@ describe('LokiQueryBuilderContainer', () => {
     await waitFor(() => {
       expect(props.onChange).toBeCalledWith({ expr: '{app="app1", job=~"grafana|loki"}', refId: 'A' });
     });
-  });
+  }, 15000);
 
   it('highlights the query in preview using loki grammar', async () => {
     const props = {

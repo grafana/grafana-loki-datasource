@@ -1,3 +1,4 @@
+import React from 'react';
 import { render, screen, waitFor } from '@testing-library/react';
 
 import { selectors } from '@grafana/e2e-selectors';

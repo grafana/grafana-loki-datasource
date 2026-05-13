@@ -14,29 +14,9 @@ export interface LokiQueryFieldProps extends QueryEditorProps<LokiDatasource, Lo
   'data-testid'?: string;
 }
 
-interface LokiQueryFieldState {
-  labelsLoaded: boolean;
-}
-
-export class LokiQueryField extends PureComponent<LokiQueryFieldProps, LokiQueryFieldState> {
-  _isMounted = false;
-
-  constructor(props: LokiQueryFieldProps) {
-    super(props);
-
-    this.state = { labelsLoaded: false };
-  }
-
-  async componentDidMount() {
-    this._isMounted = true;
-    await this.props.datasource.languageProvider.start(this.props.range);
-    if (this._isMounted) {
-      this.setState({ labelsLoaded: true });
-    }
-  }
-
-  componentWillUnmount() {
-    this._isMounted = false;
+export class LokiQueryField extends PureComponent<LokiQueryFieldProps> {
+  componentDidMount() {
+    this.props.datasource.languageProvider.start(this.props.range);
   }
 
   componentDidUpdate(prevProps: LokiQueryFieldProps) {

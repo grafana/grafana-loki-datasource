@@ -17,6 +17,7 @@
   "executable": "gpx_grafana-loki-datasource",
   "info": {
     "description": "Like Prometheus but for logs. OSS logging solution from Grafana Labs",
+    "keywords": [],
     "author": {
       "name": "Grafana Labs",
       "url": "https://grafana.com"

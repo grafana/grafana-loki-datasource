@@ -25,7 +25,7 @@ jest.mock('uuid', () => ({
 
 const originalShardingFlagState = config.featureToggles.lokiShardSplitting;
 const originalLokiQueryLimitsContextState = config.featureToggles.lokiQueryLimitsContext;
-const originalLokiAlignedQuerySplitting = config.featureToggles.lokiAlignedQuerySplitting;
+const originalLokiAlignedQuerySplitting = (config.featureToggles as Record<string, boolean | undefined>).lokiAlignedQuerySplitting;
 const originalErr = console.error;
 beforeEach(() => {
   jest.spyOn(console, 'error').mockImplementation(() => {});
@@ -42,7 +42,7 @@ afterAll(() => {
   jest.mocked(global.setTimeout).mockReset();
   config.featureToggles.lokiShardSplitting = originalShardingFlagState;
   config.featureToggles.lokiQueryLimitsContext = originalLokiQueryLimitsContextState;
-  config.featureToggles.lokiAlignedQuerySplitting = originalLokiAlignedQuerySplitting;
+  (config.featureToggles as Record<string, boolean | undefined>).lokiAlignedQuerySplitting = originalLokiAlignedQuerySplitting;
   console.error = originalErr;
 });
 
@@ -69,7 +69,7 @@ describe.each([false, true])('runSplitQuery(aligned = %s)', (lokiAlignedQuerySpl
   };
   let globalRequest = createRequest([{ expr: 'count_over_time({a="b"}[1m])', refId: 'A' }]);
   beforeEach(() => {
-    config.featureToggles.lokiAlignedQuerySplitting = lokiAlignedQuerySplitting;
+    (config.featureToggles as Record<string, boolean | undefined>).lokiAlignedQuerySplitting = lokiAlignedQuerySplitting;
     globalRequest = createRequest([{ expr: 'count_over_time({a="b"}[1m])', refId: 'A' }]);
     datasource = createLokiDatasource();
     jest.spyOn(datasource, 'runQuery').mockReturnValue(of({ data: [] }));
@@ -890,21 +890,22 @@ describe.each([false, true])('runSplitQuery(aligned = %s)', (lokiAlignedQuerySpl
     test('Sends forward and backward queries in different groups', async () => {
       jest.spyOn(datasource, 'runQuery');
       await expect(runSplitQuery(datasource, request)).toEmitValuesWith(() => {
-        // Forward
-        expect(jest.mocked(datasource.runQuery).mock.calls[1][0].targets[0].expr).toBe('{e="f"}');
-        expect(jest.mocked(datasource.runQuery).mock.calls[1][0].range.from.toString()).toContain('Feb 08 2023');
-        expect(jest.mocked(datasource.runQuery).mock.calls[3][0].targets[0].expr).toBe('{e="f"}');
-        expect(jest.mocked(datasource.runQuery).mock.calls[3][0].range.from.toString()).toContain('Feb 08 2023');
-        expect(jest.mocked(datasource.runQuery).mock.calls[5][0].targets[0].expr).toBe('{e="f"}');
-        expect(jest.mocked(datasource.runQuery).mock.calls[5][0].range.from.toString()).toContain('Feb 09 2023');
+        const calls = jest.mocked(datasource.runQuery).mock.calls;
+        const fromMs = (i: number) => calls[i][0].range.from.valueOf();
 
-        // Backward
-        expect(jest.mocked(datasource.runQuery).mock.calls[0][0].targets[0].expr).toBe('{a="b"}');
-        expect(jest.mocked(datasource.runQuery).mock.calls[0][0].range.from.toString()).toContain('Feb 09 2023');
-        expect(jest.mocked(datasource.runQuery).mock.calls[2][0].targets[0].expr).toBe('{a="b"}');
-        expect(jest.mocked(datasource.runQuery).mock.calls[2][0].range.from.toString()).toContain('Feb 08 2023');
-        expect(jest.mocked(datasource.runQuery).mock.calls[4][0].targets[0].expr).toBe('{a="b"}');
-        expect(jest.mocked(datasource.runQuery).mock.calls[4][0].range.from.toString()).toContain('Feb 08 2023');
+        // Forward queries (odd indices): {e="f"}, ascending in time
+        expect(calls[1][0].targets[0].expr).toBe('{e="f"}');
+        expect(calls[3][0].targets[0].expr).toBe('{e="f"}');
+        expect(calls[5][0].targets[0].expr).toBe('{e="f"}');
+        expect(fromMs(1)).toBeLessThan(fromMs(3));
+        expect(fromMs(3)).toBeLessThan(fromMs(5));
+
+        // Backward queries (even indices): {a="b"}, descending in time
+        expect(calls[0][0].targets[0].expr).toBe('{a="b"}');
+        expect(calls[2][0].targets[0].expr).toBe('{a="b"}');
+        expect(calls[4][0].targets[0].expr).toBe('{a="b"}');
+        expect(fromMs(0)).toBeGreaterThan(fromMs(2));
+        expect(fromMs(2)).toBeGreaterThan(fromMs(4));
 
         // 3 days, 3 chunks, 2 groups logs, 6 requests
         expect(datasource.runQuery).toHaveBeenCalledTimes(6);

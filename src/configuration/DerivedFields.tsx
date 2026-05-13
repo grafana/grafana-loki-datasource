@@ -1,6 +1,5 @@
-import React from 'react';
+import React, { useCallback, useState } from 'react';
 import { css } from '@emotion/css';
-import { useCallback, useState } from 'react';
 
 import { type GrafanaTheme2, VariableOrigin, DataLinkBuiltInVars } from '@grafana/data';
 import { ConfigDescriptionLink, ConfigSubSection } from '@grafana/plugin-ui';

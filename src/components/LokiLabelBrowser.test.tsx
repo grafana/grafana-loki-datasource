@@ -1,3 +1,4 @@
+import React from 'react';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
@@ -258,12 +259,15 @@ describe('LokiLabelBrowser', () => {
     await userEvent.click(label1);
     await screen.findByLabelText('Values for label1');
     await screen.findByLabelText('Values for label2');
-    expect(await screen.findAllByRole('option', { name: /value/ })).toHaveLength(4);
+    // Match value options by their `title` attribute — once filtering injects
+    // <mark> highlights, the accessible name splits into "val ue 1 -1" and
+    // `name: /value/` no longer matches.
+    await waitFor(() => expect(screen.getAllByTitle(/^value/)).toHaveLength(4));
     // Typing '1' to filter for values
     await userEvent.type(screen.getByLabelText('Filter expression for values'), 'val1');
     expect(screen.getByLabelText('Filter expression for values')).toHaveValue('val1');
-    expect(screen.queryByRole('option', { name: 'value2-2' })).not.toBeInTheDocument();
-    expect(await screen.findAllByRole('option', { name: /value/ })).toHaveLength(3);
+    expect(screen.queryByTitle('value2-2')).not.toBeInTheDocument();
+    await waitFor(() => expect(screen.getAllByTitle(/^value/)).toHaveLength(3));
   });
 
   it('facets labels', async () => {
@@ -276,7 +280,7 @@ describe('LokiLabelBrowser', () => {
     await userEvent.click(label1);
     await screen.findByLabelText('Values for label1');
     await screen.findByLabelText('Values for label2');
-    expect(await screen.findAllByRole('option', { name: /value/ })).toHaveLength(4);
+    await waitFor(() => expect(screen.getAllByRole('option', { name: /value/ })).toHaveLength(4));
     expect(screen.queryByRole('option', { name: /label3/ })).toHaveTextContent('label3');
     // Click value1-1 which triggers facetting for value3-x, and still show all value1-x
     const value1 = await screen.findByRole('option', { name: 'value1-1', selected: false });

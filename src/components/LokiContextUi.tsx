@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { useRef, useCallback, useEffect, useMemo, useState } from 'react';
 import { css } from '@emotion/css';
-import { useRef, useCallback, useEffect, useMemo, useState } from 'react';
+
 import { useAsync } from 'react-use';
 
 import { dateTime, type GrafanaTheme2, type LogRowModel, renderMarkdown, type SelectableValue } from '@grafana/data';

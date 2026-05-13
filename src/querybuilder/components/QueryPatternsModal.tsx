@@ -1,7 +1,6 @@
-import React from 'react';
+import React, { useMemo, useState } from 'react';
 import { css } from '@emotion/css';
 import { capitalize } from 'lodash';
-import { useMemo, useState } from 'react';
 
 import { type CoreApp, type GrafanaTheme2, getNextRefId } from '@grafana/data';
 import { reportInteraction } from '@grafana/runtime';
