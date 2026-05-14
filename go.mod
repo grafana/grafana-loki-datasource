@@ -13,8 +13,8 @@ require (
 	github.com/gorilla/websocket v1.5.4-0.20250319132907-e064f32e3674
 	github.com/grafana/dskit v0.0.0-20260108123158-1a1acfb6ef2e
 	github.com/grafana/grafana-plugin-sdk-go v0.291.1
-	github.com/grafana/grafana-prometheus-datasource/pkg/promlib v0.0.10
-	github.com/grafana/grafana/apps/scope v0.0.0-20260414094027-5783575f79d4
+	github.com/grafana/grafana-prometheus-datasource/pkg/promlib v0.0.11
+	github.com/grafana/grafana/apps/scope v0.0.85-test
 	github.com/grafana/loki/v3 v3.5.11
 	github.com/json-iterator/go v1.1.12
 	github.com/prometheus/client_golang v1.23.2
