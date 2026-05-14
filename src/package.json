@@ -8,7 +8,7 @@
     "@grafana/assistant": "0.1.24",
     "@grafana/data": "13.1.0-pre",
     "@grafana/lezer-logql": "0.2.9",
-    "@grafana/llm": "1.0.3",
+    "@grafana/llm": "1.0.8",
     "@grafana/monaco-logql": "^0.0.8",
     "@grafana/runtime": "13.1.0-pre",
     "@grafana/schema": "13.1.0-pre",
