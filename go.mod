@@ -15,7 +15,7 @@ require (
 	github.com/grafana/grafana-plugin-sdk-go v0.291.1
 	github.com/grafana/grafana-prometheus-datasource/pkg/promlib v0.0.10
 	github.com/grafana/grafana/apps/scope v0.0.0-20260414094027-5783575f79d4
-	github.com/grafana/loki/v3 v3.5.11
+	github.com/grafana/loki/v3 v3.6.4
 	github.com/json-iterator/go v1.1.12
 	github.com/prometheus/client_golang v1.23.2
 	github.com/prometheus/prometheus v0.303.1
