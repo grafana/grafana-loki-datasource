@@ -213,7 +213,7 @@ func (ds *DataSource) QueryData(ctx context.Context, req *backend.QueryDataReque
 func queryData(ctx context.Context, req *backend.QueryDataRequest, dsInfo *datasourceInfo, responseOpts ResponseOpts, tracer trace.Tracer, plog log.Logger, runInParallel bool, logQLScopes bool) (*backend.QueryDataResponse, error) {
 	result := backend.NewQueryDataResponse()
 
-	req, schemadsRefIDs, sqlErrs := normalizeGrafanaSQLRequest(ctx, req, dsInfo)
+	req, sqlKinds, sqlErrs := normalizeGrafanaSQLRequest(ctx, req, dsInfo)
 	for refID, e := range sqlErrs {
 		result.Responses[refID] = backend.DataResponse{
 			Error:       e,
@@ -268,14 +268,18 @@ func queryData(ctx context.Context, req *backend.QueryDataRequest, dsInfo *datas
 	}
 	plog.Debug("Executed queries", "duration", time.Since(start), "queriesLength", len(queries), "runInParallel", runInParallel)
 
-	if len(schemadsRefIDs) > 0 {
-		for refID, dr := range result.Responses {
-			if _, ok := schemadsRefIDs[refID]; !ok || dr.Error != nil {
-				continue
-			}
-			dr.Frames = flattenLogsToTabular(dr.Frames, responseOpts.logsDataplane, plog)
-			result.Responses[refID] = dr
+	for refID, kind := range sqlKinds {
+		dr, ok := result.Responses[refID]
+		if !ok || dr.Error != nil {
+			continue
 		}
+		switch kind {
+		case sqlKindMetric:
+			dr.Frames = flattenMetricsToTabular(dr.Frames, plog)
+		case sqlKindLog:
+			dr.Frames = flattenLogsToTabular(dr.Frames, responseOpts.logsDataplane, plog)
+		}
+		result.Responses[refID] = dr
 	}
 
 	return result, err
