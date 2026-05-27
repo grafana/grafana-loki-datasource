@@ -17,11 +17,7 @@
   "executable": "gpx_grafana-loki-datasource",
   "info": {
     "description": "Like Prometheus but for logs. OSS logging solution from Grafana Labs",
-    "keywords": [
-        "logs",
-        "opentelemetry",
-        "otel"
-    ],
+    "keywords": ["logs", "opentelemetry", "otel"],
     "author": {
       "name": "Grafana Labs",
       "url": "https://grafana.com"
@@ -51,6 +47,156 @@
     "version": "%VERSION%",
     "updated": "%TODAY%"
   },
+  "type": "datasource",
+  "name": "Loki",
+  "id": "loki",
+  "category": "logging",
+
+  "logs": true,
+  "metrics": true,
+  "alerting": true,
+  "annotations": true,
+  "streaming": true,
+  "backend": true,
+
+  "queryOptions": {
+    "maxDataPoints": true
+  },
+  "executable": "gpx_loki",
+  "info": {
+    "description": "Like Prometheus but for logs. OSS logging solution from Grafana Labs",
+    "author": {
+      "name": "Grafana Labs",
+      "url": "https://grafana.com"
+    },
+    "logos": {
+      "small": "img/loki_icon.svg",
+      "large": "img/loki_icon.svg"
+    },
+    "links": [
+      {
+        "name": "Learn more",
+        "url": "https://grafana.com/loki"
+      },
+      {
+        "name": "GitHub Project",
+        "url": "https://github.com/grafana/loki"
+      },
+      {
+        "name": "Raise issue",
+        "url": "https://github.com/grafana/grafana/issues/new"
+      },
+      {
+        "name": "Documentation",
+        "url": "https://grafana.com/docs/grafana/latest/datasources/loki/"
+      }
+    ],
+    "version": "%VERSION%"
+  },
+  "routes": [
+    {
+      "method": "GET",
+      "path": "/api/v1/query",
+      "reqRole": "Viewer",
+      "reqAction": "datasources:query"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/query_range",
+      "reqRole": "Viewer",
+      "reqAction": "datasources:query"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/series",
+      "reqRole": "Viewer",
+      "reqAction": "datasources:query"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/labels",
+      "reqRole": "Viewer",
+      "reqAction": "datasources:query"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/label",
+      "reqRole": "Viewer",
+      "reqAction": "datasources:query"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/detected_fields",
+      "reqRole": "Viewer",
+      "reqAction": "datasources:query"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/detected_field",
+      "reqRole": "Viewer",
+      "reqAction": "datasources:query"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/tail",
+      "reqRole": "Viewer",
+      "reqAction": "datasources:query"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v2alpha/tail",
+      "reqRole": "Viewer",
+      "reqAction": "datasources:query"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/rules",
+      "reqRole": "Viewer",
+      "reqAction": "alert.rules.external:read"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/rules",
+      "reqRole": "Editor",
+      "reqAction": "alert.rules.external:write"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v1/rules",
+      "reqRole": "Editor",
+      "reqAction": "alert.rules.external:write"
+    },
+    {
+      "method": "GET",
+      "path": "/rules",
+      "reqRole": "Viewer",
+      "reqAction": "alert.rules.external:read"
+    },
+    {
+      "method": "POST",
+      "path": "/rules",
+      "reqRole": "Editor",
+      "reqAction": "alert.rules.external:write"
+    },
+    {
+      "method": "DELETE",
+      "path": "/rules",
+      "reqRole": "Editor",
+      "reqAction": "alert.rules.external:write"
+    },
+    {
+      "method": "DELETE",
+      "path": "/config/v1/rules",
+      "reqRole": "Editor",
+      "reqAction": "alert.rules.external:write"
+    },
+    {
+      "method": "POST",
+      "path": "/config/v1/rules",
+      "reqRole": "Editor",
+      "reqAction": "alert.rules.external:write"
+    }
+  ],
   "dependencies": {
     "grafanaDependency": ">=12.3.0",
     "plugins": []
