@@ -70,7 +70,7 @@
   },
   "engines": {
     "node": ">=24",
-    "npm": ">=11.15.0"
+    "npm": ">=11.12.1"
   },
   "dependencies": {
     "@emotion/css": "11.10.6",
@@ -91,5 +91,5 @@
     "react": "^18.3.0",
     "react-dom": "^18.3.0"
   },
-  "packageManager": "npm@11.4.2"
+  "packageManager": "npm@11.12.1"
 }
