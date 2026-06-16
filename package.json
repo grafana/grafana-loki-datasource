@@ -82,7 +82,7 @@
     "@grafana/monaco-logql": "^0.0.8",
     "@grafana/plugin-ui": "^0.13.1",
     "@grafana/runtime": "^12.4.0",
-    "@grafana/schema": "^12.4.0",
+    "@grafana/schema": "^13.0.1",
     "@grafana/ui": "^12.4.0",
     "@lezer/lr": "^1.4.3",
     "@openfeature/web-sdk": "^1.7.3",
