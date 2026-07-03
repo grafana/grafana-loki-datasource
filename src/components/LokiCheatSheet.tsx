@@ -1,7 +1,6 @@
-import React from 'react';
 import { css } from '@emotion/css';
 import { shuffle } from 'lodash';
-import { memo, useState, useEffect } from 'react';
+import React, { memo, useState, useEffect } from 'react';
 
 import { type GrafanaTheme2, type QueryEditorHelpProps } from '@grafana/data';
 import { reportInteraction } from '@grafana/runtime';
