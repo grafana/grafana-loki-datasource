@@ -92,7 +92,7 @@
     "pluralize": "^8.0.0",
     "react": "^18.3.0",
     "react-dom": "^18.3.0",
-    "react-use": "17.6.0",
+    "react-use": "17.6.1",
     "rxjs": "7.8.2",
     "uuid": "13.0.2"
   },
