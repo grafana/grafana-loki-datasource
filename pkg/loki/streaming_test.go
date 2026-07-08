@@ -6,6 +6,7 @@ import (
 
 	"github.com/grafana/grafana-plugin-sdk-go/backend"
 	"github.com/grafana/grafana-plugin-sdk-go/backend/httpclient"
+	"github.com/grafana/grafana-plugin-sdk-go/config"
 	"github.com/grafana/grafana-plugin-sdk-go/experimental/featuretoggles"
 	"github.com/stretchr/testify/require"
 )
@@ -41,10 +42,10 @@ func TestSubscribeStream(t *testing.T) {
 
 	t.Run("when feature toggle is enabled", func(t *testing.T) {
 		// Create a context with the feature toggle enabled
-		cfg := backend.NewGrafanaCfg(map[string]string{
+		cfg := config.NewGrafanaCfg(map[string]string{
 			featuretoggles.EnabledFeatures: flagLokiExperimentalStreaming,
 		})
-		ctx := backend.WithGrafanaConfig(context.Background(), cfg)
+		ctx := config.WithGrafanaConfig(context.Background(), cfg)
 
 		resp, err := service.SubscribeStream(ctx, req)
 

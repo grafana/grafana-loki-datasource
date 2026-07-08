@@ -16,6 +16,7 @@ import (
 	"github.com/grafana/grafana-plugin-sdk-go/backend/instancemgmt"
 	"github.com/grafana/grafana-plugin-sdk-go/backend/log"
 	"github.com/grafana/grafana-plugin-sdk-go/backend/tracing"
+	"github.com/grafana/grafana-plugin-sdk-go/config"
 	"github.com/grafana/grafana-plugin-sdk-go/data"
 	scope "github.com/grafana/grafana/apps/scope/pkg/apis/scope/v0alpha1"
 	"go.opentelemetry.io/otel/attribute"
@@ -279,7 +280,6 @@ func runQuery(ctx context.Context, api *LokiAPI, query *lokiQuery, responseOpts 
 	return res, nil
 }
 
-
 func isFeatureEnabled(ctx context.Context, feature string) bool {
-	return backend.GrafanaConfigFromContext(ctx).FeatureToggles().IsEnabled(feature)
+	return config.GrafanaConfigFromContext(ctx).FeatureToggles().IsEnabled(feature)
 }
