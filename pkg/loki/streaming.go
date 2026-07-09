@@ -3,6 +3,7 @@ package loki
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/url"
 	"os"
@@ -14,6 +15,27 @@ import (
 	"github.com/grafana/grafana-plugin-sdk-go/backend"
 	"github.com/grafana/grafana-plugin-sdk-go/data"
 )
+
+// ErrGrafanaSQLStreamingNotSupported is returned when a Grafana SQL / schemads payload is used with Loki streaming.
+var ErrGrafanaSQLStreamingNotSupported = errors.New("grafana sql queries are not supported for Loki streaming")
+
+// rejectGrafanaSQLStreamPayload returns ErrGrafanaSQLStreamingNotSupported when the JSON envelope is a Grafana SQL query.
+// Malformed JSON returns nil so existing parsing can surface errors.
+func rejectGrafanaSQLStreamPayload(raw []byte) error {
+	if len(raw) == 0 {
+		return nil
+	}
+	var probe struct {
+		GrafanaSql bool `json:"grafanaSql"`
+	}
+	if err := json.Unmarshal(raw, &probe); err != nil {
+		return nil
+	}
+	if probe.GrafanaSql {
+		return ErrGrafanaSQLStreamingNotSupported
+	}
+	return nil
+}
 
 func (ds *DataSource) SubscribeStream(ctx context.Context, req *backend.SubscribeStreamRequest) (*backend.SubscribeStreamResponse, error) {
 	if !isFeatureEnabled(ctx, flagLokiExperimentalStreaming) {
@@ -29,6 +51,12 @@ func (ds *DataSource) SubscribeStream(ctx context.Context, req *backend.Subscrib
 		return &backend.SubscribeStreamResponse{
 			Status: backend.SubscribeStreamStatusNotFound,
 		}, fmt.Errorf("expected tail in channel path")
+	}
+
+	if err := rejectGrafanaSQLStreamPayload(req.Data); err != nil {
+		return &backend.SubscribeStreamResponse{
+			Status: backend.SubscribeStreamStatusPermissionDenied,
+		}, err
 	}
 
 	query, err := parseQueryModel(req.Data)
@@ -62,6 +90,10 @@ func (ds *DataSource) SubscribeStream(ctx context.Context, req *backend.Subscrib
 // Single instance for each channel (results are shared with all listeners)
 func (ds *DataSource) RunStream(ctx context.Context, req *backend.RunStreamRequest, sender *backend.StreamSender) error {
 	dsInfo := ds.info
+
+	if err := rejectGrafanaSQLStreamPayload(req.Data); err != nil {
+		return err
+	}
 
 	query, err := parseQueryModel(req.Data)
 	if err != nil {
