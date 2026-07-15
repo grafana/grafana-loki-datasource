@@ -106,7 +106,7 @@
     { "method": "DELETE", "path": "/api/prom/rules", "reqRole": "Editor", "reqAction": "alert.rules.external:write" }
   ],
   "dependencies": {
-    "grafanaDependency": ">=12.3.0",
+    "grafanaDependency": ">=12.3.0-0",
     "plugins": []
   }
 }
