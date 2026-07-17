@@ -10,7 +10,7 @@ require (
 	github.com/gorilla/websocket v1.5.4-0.20250319132907-e064f32e3674
 	github.com/grafana/dskit v0.0.0-20260427162712-0457a92dacc3
 	github.com/grafana/grafana-plugin-sdk-go v0.292.2
-	github.com/grafana/grafana-prometheus-datasource/pkg/promlib v0.0.13
+	github.com/grafana/grafana-prometheus-datasource/pkg/promlib v0.0.14
 	github.com/grafana/grafana/apps/scope v0.0.0-20260427171703-d4f46decefcb
 	github.com/grafana/loki/v3 v3.7.3
 	github.com/grafana/schemads v0.2.3

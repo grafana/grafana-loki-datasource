@@ -240,8 +240,8 @@ github.com/grafana/gomemcache v0.0.0-20251127154401-74f93547077b h1:5qp8/5YPt/Z2
 github.com/grafana/gomemcache v0.0.0-20251127154401-74f93547077b/go.mod h1:j/s0jkda4UXTemDs7Pgw/vMT06alWc42CHisvYac0qw=
 github.com/grafana/grafana-plugin-sdk-go v0.292.2 h1:6xrNZpe905vzX1pY33Fyet7Oxw5xULcAHm2b8dvNZNY=
 github.com/grafana/grafana-plugin-sdk-go v0.292.2/go.mod h1:MPviZeixuZDc5T3f62FBCCPSOJ51/JocZH5+ZiQ1DmM=
-github.com/grafana/grafana-prometheus-datasource/pkg/promlib v0.0.13 h1:URIYPcjm4pxm6Bl+3ZccncEYGGvA066QhYoTdrVD/3M=
-github.com/grafana/grafana-prometheus-datasource/pkg/promlib v0.0.13/go.mod h1:ldRQxxUwdjRMCdc2G8XVwKR6dCUUTbzHn4Vz2FSKqtc=
+github.com/grafana/grafana-prometheus-datasource/pkg/promlib v0.0.14 h1:HSxLn0qCnA9+PLSG25jBW6TL7cNSye6ohLyss/mHzeQ=
+github.com/grafana/grafana-prometheus-datasource/pkg/promlib v0.0.14/go.mod h1:ffxpjdz+WxnvNvDkzQr9fQffC4tgobr+GX5P3DUszM8=
 github.com/grafana/grafana/apps/scope v0.0.0-20260427171703-d4f46decefcb h1:f71QY1XosITgThiADvcRvK932A0TUSTTlbhhzvjtpg4=
 github.com/grafana/grafana/apps/scope v0.0.0-20260427171703-d4f46decefcb/go.mod h1:Jk+o778Rv0Rv4EDYlpB8UtMXaWbU7zGbTSVU1Z99a7U=
 github.com/grafana/grafana/pkg/apimachinery v0.0.0-20260118065639-60cb766a97d6 h1:Meoq0neEejGlmclgCInZM7EXl3Dw27zlGGwvEmJwvaY=
