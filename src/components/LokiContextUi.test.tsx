@@ -10,10 +10,8 @@ import { type ContextFilter, type LokiQuery } from '../types';
 
 import { IS_LOKI_LOG_CONTEXT_UI_OPEN, LokiContextUi, type LokiContextUiProps } from './LokiContextUi';
 
-// we have to mock out reportInteraction, otherwise it crashes the test.
 jest.mock('@grafana/runtime', () => ({
   ...jest.requireActual('@grafana/runtime'),
-  reportInteraction: () => null,
 }));
 
 const setupProps = (): LokiContextUiProps => {
