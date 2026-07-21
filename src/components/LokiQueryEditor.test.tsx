@@ -21,7 +21,6 @@ jest.mock('@grafana/runtime', () => {
     getAppEvents: jest.fn().mockReturnValue({
       subscribe: jest.fn().mockReturnValue({ unsubscribe: jest.fn() }),
     }),
-    reportInteraction: jest.fn(),
   };
 });
 
