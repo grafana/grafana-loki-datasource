@@ -26,7 +26,7 @@ func TestSubscribeStream(t *testing.T) {
 				URL:  "http://localhost:3100",
 			},
 		},
-		Path: "tail/test",
+		Path: "tail/dsId/test/stack-1",
 		Data: []byte(`{"expr": "test"}`),
 	}
 
@@ -41,8 +41,37 @@ func TestSubscribeStream(t *testing.T) {
 		require.Equal(t, backend.SubscribeStreamStatusPermissionDenied, resp.Status)
 	})
 
-	t.Run("when feature toggle is enabled", func(t *testing.T) {
-		// Create a context with the feature toggle enabled
+	t.Run("when feature toggle is enabled and namespace matches", func(t *testing.T) {
+		// Create a context with the feature toggle enabled and a plugin
+		// context whose namespace matches the one in the request path
+		// (tail/dsId/test/stack-1 => "stack-1").
+		cfg := config.NewGrafanaCfg(map[string]string{
+			featuretoggles.EnabledFeatures: flagLokiExperimentalStreaming,
+		})
+		ctx := config.WithGrafanaConfig(context.Background(), cfg)
+		ctx = backend.WithPluginContext(ctx, backend.PluginContext{Namespace: "stack-1"})
+
+		resp, err := service.SubscribeStream(ctx, req)
+
+		require.NoError(t, err)
+		require.Equal(t, backend.SubscribeStreamStatusOK, resp.Status)
+	})
+
+	t.Run("when namespace does not match the request path", func(t *testing.T) {
+		cfg := config.NewGrafanaCfg(map[string]string{
+			featuretoggles.EnabledFeatures: flagLokiExperimentalStreaming,
+		})
+		ctx := config.WithGrafanaConfig(context.Background(), cfg)
+		ctx = backend.WithPluginContext(ctx, backend.PluginContext{Namespace: "stack-2"})
+
+		resp, err := service.SubscribeStream(ctx, req)
+
+		require.Error(t, err)
+		require.Equal(t, "invalid namespace supplied in request", err.Error())
+		require.Equal(t, backend.SubscribeStreamStatusPermissionDenied, resp.Status)
+	})
+
+	t.Run("when namespace is missing from the plugin context", func(t *testing.T) {
 		cfg := config.NewGrafanaCfg(map[string]string{
 			featuretoggles.EnabledFeatures: flagLokiExperimentalStreaming,
 		})
@@ -50,8 +79,9 @@ func TestSubscribeStream(t *testing.T) {
 
 		resp, err := service.SubscribeStream(ctx, req)
 
-		require.NoError(t, err)
-		require.Equal(t, backend.SubscribeStreamStatusOK, resp.Status)
+		require.Error(t, err)
+		require.Equal(t, "invalid namespace supplied in request", err.Error())
+		require.Equal(t, backend.SubscribeStreamStatusPermissionDenied, resp.Status)
 	})
 
 	t.Run("grafana sql payload is rejected when streaming is enabled", func(t *testing.T) {
