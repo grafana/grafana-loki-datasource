@@ -59,6 +59,14 @@ func (ds *DataSource) SubscribeStream(ctx context.Context, req *backend.Subscrib
 		}, err
 	}
 
+	pluginCfg := backend.PluginConfigFromContext(ctx)
+	namespace := strings.Split(req.Path, "/")[3]
+	if namespace != pluginCfg.Namespace {
+		return &backend.SubscribeStreamResponse{
+			Status: backend.SubscribeStreamStatusPermissionDenied,
+		}, fmt.Errorf("invalid namespace supplied in request")
+	}
+
 	query, err := parseQueryModel(req.Data)
 	if err != nil {
 		return nil, err
