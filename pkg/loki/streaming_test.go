@@ -26,7 +26,7 @@ func TestSubscribeStream(t *testing.T) {
 				URL:  "http://localhost:3100",
 			},
 		},
-		Path: "tail/dsId/test/stack-1",
+		Path: "tail/dsId/test/stacks-1",
 		Data: []byte(`{"expr": "test"}`),
 	}
 
@@ -42,14 +42,11 @@ func TestSubscribeStream(t *testing.T) {
 	})
 
 	t.Run("when feature toggle is enabled and namespace matches", func(t *testing.T) {
-		// Create a context with the feature toggle enabled and a plugin
-		// context whose namespace matches the one in the request path
-		// (tail/dsId/test/stack-1 => "stack-1").
 		cfg := config.NewGrafanaCfg(map[string]string{
 			featuretoggles.EnabledFeatures: flagLokiExperimentalStreaming,
 		})
 		ctx := config.WithGrafanaConfig(context.Background(), cfg)
-		ctx = backend.WithPluginContext(ctx, backend.PluginContext{Namespace: "stack-1"})
+		ctx = backend.WithPluginContext(ctx, backend.PluginContext{Namespace: "stacks-1"})
 
 		resp, err := service.SubscribeStream(ctx, req)
 
@@ -62,7 +59,7 @@ func TestSubscribeStream(t *testing.T) {
 			featuretoggles.EnabledFeatures: flagLokiExperimentalStreaming,
 		})
 		ctx := config.WithGrafanaConfig(context.Background(), cfg)
-		ctx = backend.WithPluginContext(ctx, backend.PluginContext{Namespace: "stack-2"})
+		ctx = backend.WithPluginContext(ctx, backend.PluginContext{Namespace: "stacks-2"})
 
 		resp, err := service.SubscribeStream(ctx, req)
 
