@@ -17,11 +17,7 @@
   "executable": "gpx_grafana-loki-datasource",
   "info": {
     "description": "Like Prometheus but for logs. OSS logging solution from Grafana Labs",
-    "keywords": [
-        "logs",
-        "opentelemetry",
-        "otel"
-    ],
+    "keywords": ["logs", "opentelemetry", "otel"],
     "author": {
       "name": "Grafana Labs",
       "url": "https://grafana.com"
