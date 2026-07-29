@@ -1,5 +1,10 @@
 # Changelog
 
+## 13.1.0
+
+- Persist disabled operations in Loki query builder ([#139](https://github.com/grafana/grafana-loki-datasource/pull/139))
+- Bump @grafana/\* to 13.1.1 and update dependencies ([#137](https://github.com/grafana/grafana-loki-datasource/pull/137))
+
 ## 13.0.2
 
 - Streaming key updates ([#135](https://github.com/grafana/grafana-loki-datasource/pull/135))
