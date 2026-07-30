@@ -1,4 +1,5 @@
 import { type DataQuery, type DataQueryRequest, type DataSourceJsonData, type TimeRange } from '@grafana/data';
+import { type QueryBuilderOperation } from '@grafana/plugin-ui';
 
 import {
   type LokiDataQuery as LokiQueryFromSchema,
@@ -7,14 +8,13 @@ import {
   type LokiQueryDirection,
 } from './dataquery';
 
+export interface LokiDisabledOperation {
+  index: number;
+  operation: QueryBuilderOperation;
+}
+
 // @todo import from core
 export const DATAPLANE_LABEL_TYPES_NAME = 'labelTypes';
-
-export enum LokiResultType {
-  Stream = 'streams',
-  Vector = 'vector',
-  Matrix = 'matrix',
-}
 
 export enum LabelType {
   Indexed = 'I',
@@ -31,6 +31,7 @@ export interface LokiQuery extends LokiQueryFromSchema {
   // the temporary fix (until this gets improved in the codegen), is to
   // override it here
   queryType?: LokiQueryType;
+  disabledOperations?: LokiDisabledOperation[];
 }
 
 export interface LokiOptions extends DataSourceJsonData {

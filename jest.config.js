@@ -17,6 +17,7 @@ module.exports = {
       '@lezer/common',
       '@lezer/highlight',
       '@grafana/lezer-logql',
+      '@marcbachmann/cel-js',
     ]),
   ],
 };
