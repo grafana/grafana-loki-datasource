@@ -11,6 +11,7 @@ import { type LokiOptions, type LokiQuery, type LokiVariableQuery, LokiVariableQ
 const variableOptions = [
   { label: 'Label names', value: QueryType.LabelNames },
   { label: 'Label values', value: QueryType.LabelValues },
+  { label: 'Detected field values', value: QueryType.DetectedFieldValues },
 ];
 
 export type Props = QueryEditorProps<LokiDatasource, LokiQuery, LokiOptions, LokiVariableQuery>;
@@ -47,12 +48,18 @@ export const LokiVariableQueryEditor = ({ onChange, query, datasource, range }: 
   }, [datasource, type, range, previousType]);
 
   const onQueryTypeChange = (newType: SelectableValue<QueryType>) => {
+    // Label and stream have different semantics for Detected field values, so reset them when entering or leaving it
+    const resetFields = (type === QueryType.DetectedFieldValues) !== (newType.value === QueryType.DetectedFieldValues);
     setType(newType.value);
+    if (resetFields) {
+      setLabel('');
+      setStream('');
+    }
     if (newType.value !== undefined) {
       onChange({
         type: newType.value,
-        label,
-        stream,
+        label: resetFields ? '' : label,
+        stream: resetFields ? '' : stream,
         refId,
       });
     }
@@ -85,7 +92,7 @@ export const LokiVariableQueryEditor = ({ onChange, query, datasource, range }: 
             width={16}
           />
         </InlineField>
-        {type === QueryType.LabelValues && (
+        {(type === QueryType.LabelValues || type === QueryType.DetectedFieldValues) && (
           <>
             <InlineField label="Label" labelWidth={20}>
               <Select
@@ -93,7 +100,7 @@ export const LokiVariableQueryEditor = ({ onChange, query, datasource, range }: 
                 onChange={onLabelChange}
                 onBlur={handleBlur}
                 value={{ label: label, value: label }}
-                options={labelOptions}
+                options={type === QueryType.LabelValues ? labelOptions : []}
                 width={16}
                 allowCustomValue
               />
@@ -101,24 +108,26 @@ export const LokiVariableQueryEditor = ({ onChange, query, datasource, range }: 
           </>
         )}
       </InlineFieldRow>
-      {type === QueryType.LabelValues && (
+      {(type === QueryType.LabelValues || type === QueryType.DetectedFieldValues) && (
         <InlineFieldRow>
           <InlineField
-            label="Stream selector"
+            label={type === QueryType.DetectedFieldValues ? 'LogQL query' : 'Stream selector'}
             labelWidth={20}
             grow={true}
             tooltip={
               <div>
-                {
-                  'Optional. If defined, a list of values for the specified log stream selector is returned. For example: {label="value"} or {label="$variable"}'
-                }
+                {type === QueryType.DetectedFieldValues
+                  ? 'Required. The LogQL query to detect field values from. Fields extracted by a parser need the parser pipeline in the query, for example: {app="x"} | pattern "<method> <path>". Values are observed from a sample of recent matching log lines, so rare values may be missing.'
+                  : 'Optional. If defined, a list of values for the specified log stream selector is returned. For example: {label="value"} or {label="$variable"}'}
               </div>
             }
           >
             <Input
               type="text"
-              aria-label="Stream selector"
-              placeholder="Optional stream selector"
+              aria-label={type === QueryType.DetectedFieldValues ? 'LogQL query' : 'Stream selector'}
+              placeholder={
+                type === QueryType.DetectedFieldValues ? 'LogQL query (required)' : 'Optional stream selector'
+              }
               value={stream}
               onChange={onStreamChange}
               onBlur={handleBlur}

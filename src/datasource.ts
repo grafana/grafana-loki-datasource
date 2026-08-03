@@ -729,6 +729,20 @@ export class LokiDatasource
       return result.map((value: string) => ({ text: value }));
     }
 
+    if (query.type === LokiVariableQueryType.DetectedFieldValues) {
+      const field = query.label?.trim();
+      const expr = query.stream?.trim();
+      // The detected_field/{name}/values endpoint needs a field name and a scoping query; '{}' would query unscoped.
+      if (!field || !expr || expr === '{}') {
+        return [];
+      }
+      const result = await this.languageProvider.fetchDetectedFieldValues(field, {
+        expr,
+        timeRange,
+      });
+      return Array.isArray(result) ? result.map((value: string) => ({ text: value })) : [];
+    }
+
     if (!query.label) {
       return [];
     }
