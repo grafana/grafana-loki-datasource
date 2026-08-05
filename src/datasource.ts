@@ -51,6 +51,7 @@ import {
   DataSourceWithBackend,
   getTemplateSrv,
   type TemplateSrv,
+  toDataQueryError,
 } from '@grafana/runtime';
 import { type DataQuery } from '@grafana/schema';
 
@@ -736,11 +737,24 @@ export class LokiDatasource
       if (!field || !expr || expr === '{}') {
         return [];
       }
-      const result = await this.languageProvider.fetchDetectedFieldValues(field, {
-        expr,
-        timeRange,
-      });
-      return Array.isArray(result) ? result.map((value: string) => ({ text: value })) : [];
+      try {
+        const result = await this.languageProvider.fetchDetectedFieldValues(
+          field,
+          {
+            expr,
+            timeRange,
+            throwError: true,
+          },
+          { showErrorAlert: false }
+        );
+        return Array.isArray(result) ? result.map((value: string) => ({ text: value })) : [];
+      } catch (error) {
+        // Surface fetch failures (e.g. a Loki version without the detected_field API) to the variable UI
+        // via a real Error (a raw FetchError is not one), keeping its fields (status, cancelled, traceId).
+        const queryError = toDataQueryError(error);
+        const message = `Failed to fetch detected field values for "${field}": ${queryError.message}`;
+        throw Object.assign(new Error(message), queryError, { message });
+      }
     }
 
     if (!query.label) {

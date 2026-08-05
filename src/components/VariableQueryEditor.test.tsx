@@ -98,7 +98,7 @@ describe('LokiVariableQueryEditor', () => {
       select(screen.getByLabelText('Query type'), 'Detected field values', { container: document.body })
     );
 
-    await userEvent.type(screen.getByLabelText('Label'), 'method{enter}');
+    await userEvent.type(screen.getByLabelText('Field'), 'method{enter}');
     await userEvent.type(screen.getByLabelText('LogQL query'), '{{app="x"} | pattern "<method> <path>"');
 
     await waitFor(() => expect(screen.getByDisplayValue('{app="x"} | pattern "<method> <path>"')).toBeInTheDocument());
@@ -139,13 +139,50 @@ describe('LokiVariableQueryEditor', () => {
     // The labels fetched for Label values are neither refetched nor offered as options
     expect(props.datasource.languageProvider.fetchLabels).toHaveBeenCalledTimes(1);
 
-    const labelInput = screen.getByLabelText('Label');
+    const labelInput = screen.getByLabelText('Field');
     await userEvent.click(labelInput);
     await userEvent.keyboard('{ArrowDown}');
 
     expect(labelInput).toHaveAttribute('aria-expanded', 'true');
     expect(screen.queryByText('luna')).not.toBeInTheDocument();
     expect(screen.queryByText('moon')).not.toBeInTheDocument();
+  });
+
+  test('Resets label and stream and offers indexed labels when switching from Detected field values to Label values', async () => {
+    const onChange = jest.fn();
+    render(<LokiVariableQueryEditor {...props} onChange={onChange} />);
+
+    // Enter a detected field name and scoping query for Detected field values
+    await waitFor(() =>
+      select(screen.getByLabelText('Query type'), 'Detected field values', { container: document.body })
+    );
+    await userEvent.type(screen.getByLabelText('Field'), 'method{enter}');
+    await userEvent.type(screen.getByLabelText('LogQL query'), '{{app="x"} | logfmt');
+    expect(props.datasource.languageProvider.fetchLabels).not.toHaveBeenCalled();
+
+    await waitFor(() => select(screen.getByLabelText('Query type'), 'Label values', { container: document.body }));
+
+    await waitFor(() =>
+      expect(onChange).toHaveBeenLastCalledWith({
+        type: LokiVariableQueryType.LabelValues,
+        label: '',
+        stream: '',
+        refId,
+      })
+    );
+    expect(screen.getByPlaceholderText('Optional stream selector')).toBeInTheDocument();
+    expect(screen.getByLabelText('Stream selector')).toHaveValue('');
+    // The indexed labels were not fetched while in Detected field values, only on switching back
+    expect(props.datasource.languageProvider.fetchLabels).toHaveBeenCalledTimes(1);
+
+    const labelInput = screen.getByLabelText('Label');
+    await userEvent.click(labelInput);
+    await userEvent.keyboard('{ArrowDown}');
+
+    expect(labelInput).toHaveAttribute('aria-expanded', 'true');
+    expect(await screen.findByText('luna')).toBeInTheDocument();
+    expect(screen.getByText('moon')).toBeInTheDocument();
+    expect(screen.queryByText('method')).not.toBeInTheDocument();
   });
 
   test('Keeps label and stream when the same query type is selected again', async () => {

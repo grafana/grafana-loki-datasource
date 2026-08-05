@@ -725,7 +725,11 @@ describe('LokiDatasource', () => {
       );
 
       expect(templateSrvStub.replace).toHaveBeenCalledWith(stream, scopedVars, expect.any(Function));
-      expect(spy).toHaveBeenCalledWith('method', { expr: stream, timeRange: range });
+      expect(spy).toHaveBeenCalledWith(
+        'method',
+        { expr: stream, timeRange: range, throwError: true },
+        { showErrorAlert: false }
+      );
       expect(result).toEqual([{ text: 'value1' }, { text: 'value2' }]);
       spy.mockClear();
     });
@@ -745,7 +749,7 @@ describe('LokiDatasource', () => {
       spy.mockClear();
     });
 
-    it('should map empty, non-array, and swallowed-error detected field values results to an empty array', async () => {
+    it('should map empty and non-array detected field values results to an empty array', async () => {
       const ds = createLokiDatasource(templateSrvStub);
       const query = { refId: 'test', type: LokiVariableQueryType.DetectedFieldValues, label: 'f', stream: '{a="b"}' };
       const spy = jest.spyOn(ds.languageProvider, 'fetchDetectedFieldValues');
@@ -755,13 +759,38 @@ describe('LokiDatasource', () => {
 
       spy.mockResolvedValueOnce(new Error('parse error'));
       expect(await ds.metricFindQuery(query)).toEqual([]);
-
-      // e.g. a Loki version without the detected_field API: the fetcher swallows the error and resolves empty
       spy.mockRestore();
-      jest.spyOn(ds, 'metadataRequest').mockRejectedValue(new Error('404 not found'));
-      const consoleError = jest.spyOn(console, 'error').mockImplementation(() => {});
-      expect(await ds.metricFindQuery(query)).toEqual([]);
-      consoleError.mockRestore();
+    });
+
+    it('should surface detected field values fetch errors with the field name and the response message', async () => {
+      const ds = createLokiDatasource(templateSrvStub);
+      const query = { refId: 'test', type: LokiVariableQueryType.DetectedFieldValues, label: 'f', stream: '{a="b"}' };
+
+      // e.g. a Loki version without the detected_field API: the 404 now rejects instead of resolving empty
+      jest
+        .spyOn(ds, 'metadataRequest')
+        .mockRejectedValueOnce({ status: 404, statusText: 'Not Found', data: { message: '404 page not found' } });
+      await expect(ds.metricFindQuery(query)).rejects.toThrow(
+        'Failed to fetch detected field values for "f": 404 page not found'
+      );
+
+      jest.spyOn(ds, 'metadataRequest').mockRejectedValueOnce(new Error('network error'));
+      await expect(ds.metricFindQuery(query)).rejects.toThrow(
+        'Failed to fetch detected field values for "f": network error'
+      );
+    });
+
+    it('should keep the cancellation flag on surfaced fetch errors', async () => {
+      const ds = createLokiDatasource(templateSrvStub);
+      const query = { refId: 'test', type: LokiVariableQueryType.DetectedFieldValues, label: 'f', stream: '{a="b"}' };
+
+      jest.spyOn(ds, 'metadataRequest').mockRejectedValue({ cancelled: true, data: { message: 'Request cancelled' } });
+      const error = await ds.metricFindQuery(query).catch((e: unknown) => e);
+      expect(error).toBeInstanceOf(Error);
+      expect(error).toMatchObject({
+        cancelled: true,
+        message: 'Failed to fetch detected field values for "f": Request cancelled',
+      });
     });
   });
 

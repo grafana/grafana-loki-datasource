@@ -94,9 +94,17 @@ export const LokiVariableQueryEditor = ({ onChange, query, datasource, range }: 
         </InlineField>
         {(type === QueryType.LabelValues || type === QueryType.DetectedFieldValues) && (
           <>
-            <InlineField label="Label" labelWidth={20}>
+            <InlineField
+              label={type === QueryType.DetectedFieldValues ? 'Field' : 'Label'}
+              labelWidth={20}
+              tooltip={
+                type === QueryType.DetectedFieldValues
+                  ? 'The name of the detected field to return values for, for example: method.'
+                  : undefined
+              }
+            >
               <Select
-                aria-label="Label"
+                aria-label={type === QueryType.DetectedFieldValues ? 'Field' : 'Label'}
                 onChange={onLabelChange}
                 onBlur={handleBlur}
                 value={{ label: label, value: label }}
