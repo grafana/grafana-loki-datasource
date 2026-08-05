@@ -67,6 +67,7 @@ export type DerivedFieldConfig = {
 export enum LokiVariableQueryType {
   LabelNames,
   LabelValues,
+  DetectedFieldValues,
 }
 
 export interface LokiVariableQuery extends DataQuery {
