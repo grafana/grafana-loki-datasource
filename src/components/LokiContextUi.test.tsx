@@ -3,7 +3,7 @@ import { act, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { select } from 'react-select-event';
 
-import { type LogRowModel, dateTime } from '@grafana/data';
+import { type LogRowModel } from '@grafana/data';
 
 import { type LogContextProvider, SHOULD_INCLUDE_PIPELINE_OPERATIONS } from '../LogContextProvider';
 import { type ContextFilter, type LokiQuery } from '../types';
@@ -121,9 +121,12 @@ describe('LokiContextUi', () => {
 
     await waitFor(() => {
       expect(props.logContextProvider.getInitContextFilters).toHaveBeenCalledWith(props.row, props.origQuery, {
-        from: dateTime(props.row.timeEpochMs),
-        to: dateTime(props.row.timeEpochMs),
-        raw: { from: dateTime(props.row.timeEpochMs), to: dateTime(props.row.timeEpochMs) },
+        from: expect.toHaveValueOf(props.row.timeEpochMs),
+        to: expect.toHaveValueOf(props.row.timeEpochMs),
+        raw: {
+          from: expect.toHaveValueOf(props.row.timeEpochMs),
+          to: expect.toHaveValueOf(props.row.timeEpochMs),
+        },
       });
     });
   });
