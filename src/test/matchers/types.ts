@@ -8,4 +8,5 @@ export interface ObservableMatchers<R, T = {}> extends jest.ExpectExtendMap {
     received: Observable<T>,
     expectations: (received: T[]) => void
   ): Promise<jest.CustomMatcherResult>;
+  toHaveValueOf(received: { valueOf(): unknown }, expectedValue: unknown): jest.CustomMatcherResult;
 }

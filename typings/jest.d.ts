@@ -12,6 +12,10 @@ declare global {
              * test fails.
              */
             toEmitValuesWith<E = ObservableType<T>>(expectations: (received: E[]) => void): Promise<CustomMatcherResult>;
+            toHaveValueOf(expectedValue: unknown): R;
+        }
+        interface Expect {
+            toHaveValueOf(expectedValue: unknown): unknown;
         }
     }
 }
