@@ -707,6 +707,91 @@ describe('LokiDatasource', () => {
       );
       expect(templateSrvStub.replace).toHaveBeenCalledWith('label5', scopedVars, expect.any(Function));
     });
+
+    it('should fetch detected field values forwarding the pipeline query, time range, and scoped variables', async () => {
+      const ds = createLokiDatasource(templateSrvStub);
+      const spy = jest.spyOn(ds.languageProvider, 'fetchDetectedFieldValues').mockResolvedValue(['value1', 'value2']);
+      const range: TimeRange = {
+        from: dateTime('2024-05-05T10:00:00Z'),
+        to: dateTime('2024-05-05T11:00:00Z'),
+        raw: { from: 'now-1h', to: 'now' },
+      };
+      const scopedVars: ScopedVars = { app: { text: 'x', value: 'x' } };
+      const stream = '{app="x"} | pattern "<method> <path>"';
+
+      const result = await ds.metricFindQuery(
+        { refId: 'test', type: LokiVariableQueryType.DetectedFieldValues, label: 'method', stream },
+        { range, scopedVars }
+      );
+
+      expect(templateSrvStub.replace).toHaveBeenCalledWith(stream, scopedVars, expect.any(Function));
+      expect(spy).toHaveBeenCalledWith(
+        'method',
+        { expr: stream, timeRange: range, throwError: true },
+        { showErrorAlert: false }
+      );
+      expect(result).toEqual([{ text: 'value1' }, { text: 'value2' }]);
+      spy.mockClear();
+    });
+
+    it('should not fetch detected field values when the field name or query is blank or the selector is `{}`', async () => {
+      const ds = createLokiDatasource(templateSrvStub);
+      const spy = jest.spyOn(ds.languageProvider, 'fetchDetectedFieldValues');
+      const type = LokiVariableQueryType.DetectedFieldValues;
+
+      expect(await ds.metricFindQuery({ refId: 'test', type, label: 'field1' })).toEqual([]);
+      expect(await ds.metricFindQuery({ refId: 'test', type, stream: '{app="x"}' })).toEqual([]);
+      expect(await ds.metricFindQuery({ refId: 'test', type, label: ' ', stream: '{app="x"}' })).toEqual([]);
+      expect(await ds.metricFindQuery({ refId: 'test', type, label: 'field1', stream: ' ' })).toEqual([]);
+      expect(await ds.metricFindQuery({ refId: 'test', type, label: 'field1', stream: '{}' })).toEqual([]);
+
+      expect(spy).not.toHaveBeenCalled();
+      spy.mockClear();
+    });
+
+    it('should map empty and non-array detected field values results to an empty array', async () => {
+      const ds = createLokiDatasource(templateSrvStub);
+      const query = { refId: 'test', type: LokiVariableQueryType.DetectedFieldValues, label: 'f', stream: '{a="b"}' };
+      const spy = jest.spyOn(ds.languageProvider, 'fetchDetectedFieldValues');
+
+      spy.mockResolvedValueOnce([]);
+      expect(await ds.metricFindQuery(query)).toEqual([]);
+
+      spy.mockResolvedValueOnce(new Error('parse error'));
+      expect(await ds.metricFindQuery(query)).toEqual([]);
+      spy.mockRestore();
+    });
+
+    it('should surface detected field values fetch errors with the field name and the response message', async () => {
+      const ds = createLokiDatasource(templateSrvStub);
+      const query = { refId: 'test', type: LokiVariableQueryType.DetectedFieldValues, label: 'f', stream: '{a="b"}' };
+
+      // e.g. a Loki version without the detected_field API: the 404 now rejects instead of resolving empty
+      jest
+        .spyOn(ds, 'metadataRequest')
+        .mockRejectedValueOnce({ status: 404, statusText: 'Not Found', data: { message: '404 page not found' } });
+      await expect(ds.metricFindQuery(query)).rejects.toThrow(
+        'Failed to fetch detected field values for "f": 404 page not found'
+      );
+
+      jest.spyOn(ds, 'metadataRequest').mockRejectedValueOnce(new Error('network error'));
+      await expect(ds.metricFindQuery(query)).rejects.toThrow(
+        'Failed to fetch detected field values for "f": network error'
+      );
+    });
+
+    it('should keep the cancellation flag on surfaced fetch errors', async () => {
+      const ds = createLokiDatasource(templateSrvStub);
+      const query = { refId: 'test', type: LokiVariableQueryType.DetectedFieldValues, label: 'f', stream: '{a="b"}' };
+
+      jest.spyOn(ds, 'metadataRequest').mockRejectedValue({ cancelled: true, data: { message: 'Request cancelled' } });
+      const error = await ds.metricFindQuery(query).catch((e: unknown) => e);
+      expect(error).toBeInstanceOf(Error);
+      expect(error).toMatchObject({
+        cancelled: true,
+        message: 'Failed to fetch detected field values for "f": Request cancelled',
+      });
+    });
   });
 
   describe('modifyQuery', () => {

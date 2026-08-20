@@ -51,6 +51,7 @@ import {
   DataSourceWithBackend,
   getTemplateSrv,
   type TemplateSrv,
+  toDataQueryError,
 } from '@grafana/runtime';
 import { type DataQuery } from '@grafana/schema';
 
@@ -727,6 +728,33 @@ export class LokiDatasource
     if (query.type === LokiVariableQueryType.LabelNames) {
       const result = await this.languageProvider.fetchLabels({ timeRange });
       return result.map((value: string) => ({ text: value }));
+    }
+
+    if (query.type === LokiVariableQueryType.DetectedFieldValues) {
+      const field = query.label?.trim();
+      const expr = query.stream?.trim();
+      // The detected_field/{name}/values endpoint needs a field name and a scoping query; '{}' would query unscoped.
+      if (!field || !expr || expr === '{}') {
+        return [];
+      }
+      try {
+        const result = await this.languageProvider.fetchDetectedFieldValues(
+          field,
+          {
+            expr,
+            timeRange,
+            throwError: true,
+          },
+          { showErrorAlert: false }
+        );
+        return Array.isArray(result) ? result.map((value: string) => ({ text: value })) : [];
+      } catch (error) {
+        // Surface fetch failures (e.g. a Loki version without the detected_field API) to the variable UI
+        // via a real Error (a raw FetchError is not one), keeping its fields (status, cancelled, traceId).
+        const queryError = toDataQueryError(error);
+        const message = `Failed to fetch detected field values for "${field}": ${queryError.message}`;
+        throw Object.assign(new Error(message), queryError, { message });
+      }
     }
 
     if (!query.label) {
