@@ -1,6 +1,6 @@
 services:
   loki:
-    image: grafana/loki:3.4.2
+    image: grafana/loki:3.7.6@sha256:efd47c67f9bac88ca29bcf8cb997d9ab29d1848bd0aff579282295542a745952
     ports:
       - '3100:3100'
     command: -config.file=/etc/loki/local-config.yaml
@@ -12,7 +12,7 @@ services:
       start_period: 10s
 
   loki-loader:
-    image: python:3.12-alpine
+    image: python:3.14-alpine@sha256:05b2b8b732ecd268fee8727a369f936f022d1321b59befd13c30ede22769dcdc
     depends_on:
       loki:
         condition: service_healthy
