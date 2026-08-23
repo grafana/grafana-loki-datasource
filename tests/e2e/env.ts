@@ -39,7 +39,8 @@ export async function resolveDataSourceUid(page: Page): Promise<string> {
   const lokiDataSources: Array<{ name: string; uid: string }> = (await response.json()).filter(
     (ds: { type: string }) => ds.type === 'loki'
   );
-  const exactMatch = lokiDataSources.find((ds) => ds.name === DS_NAME);
+  const managedDataSourceName = `[managed_data_source] - ${DS_NAME}`;
+  const exactMatch = lokiDataSources.find((ds) => ds.name === DS_NAME || ds.name === managedDataSourceName);
   if (exactMatch) {
     return exactMatch.uid;
   }
