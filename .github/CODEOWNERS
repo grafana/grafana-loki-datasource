@@ -12,3 +12,5 @@
 # This should make it easy to add new rules without breaking existing ones.
 
 * @grafana/data-sources-plugins
+src/* @grafana/observability-logs
+pkg/* @grafana/observability-logs
