@@ -43,7 +43,6 @@ import {
   type QueryVariableModel,
   type CustomVariableModel,
 } from '@grafana/data';
-import { t } from '@grafana/i18n';
 import { Duration } from '@grafana/lezer-logql';
 import {
   type BackendSrvRequest,
@@ -219,11 +218,11 @@ export class LokiDatasource
 
     switch (lokiLabelType) {
       case LabelType.Indexed:
-        return t('logs.fields.type.loki.indexed-labels', 'Indexed labels');
+        return 'Indexed labels';
       case LabelType.Parsed:
-        return t('logs.fields.type.loki.parsed-labels', 'Parsed fields');
+        return 'Parsed fields';
       case LabelType.StructuredMetadata:
-        return t('logs.fields.type.loki.structured-metadata', 'Structured metadata');
+        return 'Structured metadata';
       default:
         return null;
     }
