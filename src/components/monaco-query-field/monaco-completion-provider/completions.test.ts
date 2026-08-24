@@ -244,7 +244,7 @@ describe('getCompletions', () => {
     const situation = { type } as Situation;
     const completions = await getCompletions(situation, completionProvider);
 
-    expect(completions).toHaveLength(25);
+    expect(completions).toHaveLength(26);
   });
 
   test('Returns completion options when the situation is IN_RANGE', async () => {
@@ -403,7 +403,7 @@ describe('getCompletions', () => {
     const situation: Situation = { type: 'IN_AGGREGATION' };
     const completions = await getCompletions(situation, completionProvider);
 
-    expect(completions).toHaveLength(22);
+    expect(completions).toHaveLength(23);
   });
 
   test('Returns completion options when the situation is AFTER_UNWRAP', async () => {

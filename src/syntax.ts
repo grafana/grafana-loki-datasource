@@ -48,6 +48,11 @@ export const AGGREGATION_OPERATORS: CompletionItem[] = [
     insertText: 'topk',
     documentation: 'Largest k elements by sample value',
   },
+  {
+    label: 'approx_topk',
+    insertText: 'approx_topk',
+    documentation: 'Probabilistic approximation of topk',
+  },
 ];
 
 const PIPE_PARSERS: CompletionItem[] = [

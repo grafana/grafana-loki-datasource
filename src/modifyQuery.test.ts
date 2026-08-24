@@ -1,5 +1,7 @@
 import { type SyntaxNode } from '@lezer/common';
 
+import { Identifier, Selector } from '@grafana/lezer-logql';
+
 import {
   addDropToQuery,
   addLabelFormatToQuery,
@@ -415,7 +417,7 @@ describe('getStreamSelectorPositions', () => {
         type: {
           name: 'Selector',
           props: {},
-          id: 40,
+          id: Selector,
           flags: 0,
         },
       },
@@ -425,7 +427,7 @@ describe('getStreamSelectorPositions', () => {
         type: {
           name: 'Selector',
           props: {},
-          id: 40,
+          id: Selector,
           flags: 0,
         },
       },
@@ -448,7 +450,7 @@ describe('getIdentifierInStreamPositions', () => {
         type: {
           name: 'Identifier',
           props: {},
-          id: 43,
+          id: Identifier,
           flags: 0,
         },
       },
@@ -459,7 +461,7 @@ describe('getIdentifierInStreamPositions', () => {
         type: {
           name: 'Identifier',
           props: {},
-          id: 43,
+          id: Identifier,
           flags: 0,
         },
       },
@@ -470,7 +472,7 @@ describe('getIdentifierInStreamPositions', () => {
         type: {
           name: 'Identifier',
           props: {},
-          id: 43,
+          id: Identifier,
           flags: 0,
         },
       },
@@ -481,7 +483,7 @@ describe('getIdentifierInStreamPositions', () => {
         type: {
           name: 'Identifier',
           props: {},
-          id: 43,
+          id: Identifier,
           flags: 0,
         },
       },
