@@ -10,7 +10,7 @@ import pluginJson from './plugin.json';
 import { onDashboardLoadedHandler } from './tracking';
 import { type LokiQuery } from './types';
 
-initPluginTranslations(pluginJson.id);
+await initPluginTranslations(pluginJson.id);
 
 export const plugin = new DataSourcePlugin(LokiDatasource)
   .setQueryEditor(LokiQueryEditorByApp)
