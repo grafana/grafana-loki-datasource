@@ -11,6 +11,7 @@ import { type LokiOptions, type LokiQuery, type LokiVariableQuery, LokiVariableQ
 const variableOptions = [
   { label: 'Label names', value: QueryType.LabelNames },
   { label: 'Label values', value: QueryType.LabelValues },
+  { label: 'Detected field values', value: QueryType.DetectedFieldValues },
 ];
 
 export type Props = QueryEditorProps<LokiDatasource, LokiQuery, LokiOptions, LokiVariableQuery>;
@@ -47,12 +48,18 @@ export const LokiVariableQueryEditor = ({ onChange, query, datasource, range }: 
   }, [datasource, type, range, previousType]);
 
   const onQueryTypeChange = (newType: SelectableValue<QueryType>) => {
+    // Label and stream have different semantics for Detected field values, so reset them when entering or leaving it
+    const resetFields = (type === QueryType.DetectedFieldValues) !== (newType.value === QueryType.DetectedFieldValues);
     setType(newType.value);
+    if (resetFields) {
+      setLabel('');
+      setStream('');
+    }
     if (newType.value !== undefined) {
       onChange({
         type: newType.value,
-        label,
-        stream,
+        label: resetFields ? '' : label,
+        stream: resetFields ? '' : stream,
         refId,
       });
     }
@@ -60,6 +67,10 @@ export const LokiVariableQueryEditor = ({ onChange, query, datasource, range }: 
 
   const onLabelChange = (newLabel: SelectableValue<string>) => {
     setLabel(newLabel.value || '');
+  };
+
+  const onFieldChange = (e: FormEvent<HTMLInputElement>) => {
+    setLabel(e.currentTarget.value);
   };
 
   const onStreamChange = (e: FormEvent<HTMLInputElement>) => {
@@ -85,40 +96,69 @@ export const LokiVariableQueryEditor = ({ onChange, query, datasource, range }: 
             width={16}
           />
         </InlineField>
-        {type === QueryType.LabelValues && (
+        {(type === QueryType.LabelValues || type === QueryType.DetectedFieldValues) && (
           <>
-            <InlineField label="Label" labelWidth={20}>
-              <Select
-                aria-label="Label"
-                onChange={onLabelChange}
-                onBlur={handleBlur}
-                value={{ label: label, value: label }}
-                options={labelOptions}
-                width={16}
-                allowCustomValue
-              />
+            <InlineField
+              label={type === QueryType.DetectedFieldValues ? 'Field' : 'Label'}
+              labelWidth={20}
+              tooltip={
+                type === QueryType.DetectedFieldValues
+                  ? 'The name of the detected field to return values for, for example: method.'
+                  : undefined
+              }
+            >
+              {type === QueryType.DetectedFieldValues ? (
+                // A plain input, like the LogQL query below: a Select with custom values
+                // only commits on explicit selection, so a typed field name is lost when
+                // the user moves on without pressing Enter.
+                <Input
+                  type="text"
+                  aria-label="Field"
+                  placeholder="Field name (required)"
+                  value={label}
+                  onChange={onFieldChange}
+                  onBlur={handleBlur}
+                  width={16}
+                  autoComplete="off"
+                  autoCorrect="off"
+                  autoCapitalize="none"
+                  spellCheck={false}
+                />
+              ) : (
+                <Select
+                  aria-label="Label"
+                  onChange={onLabelChange}
+                  onBlur={handleBlur}
+                  value={{ label: label, value: label }}
+                  options={labelOptions}
+                  width={16}
+                  allowCustomValue
+                />
+              )}
             </InlineField>
           </>
         )}
       </InlineFieldRow>
-      {type === QueryType.LabelValues && (
+      {(type === QueryType.LabelValues || type === QueryType.DetectedFieldValues) && (
         <InlineFieldRow>
           <InlineField
-            label="Stream selector"
+            label={type === QueryType.DetectedFieldValues ? 'LogQL query' : 'Stream selector'}
             labelWidth={20}
             grow={true}
             tooltip={
               <div>
-                {
-                  'Optional. If defined, a list of values for the specified log stream selector is returned. For example: {label="value"} or {label="$variable"}'
-                }
+                {type === QueryType.DetectedFieldValues
+                  ? 'Required. The LogQL query to detect field values from. Fields extracted by a parser need the parser pipeline in the query, for example: {app="x"} | pattern "<method> <path>". Values are observed from a sample of recent matching log lines, so rare values may be missing.'
+                  : 'Optional. If defined, a list of values for the specified log stream selector is returned. For example: {label="value"} or {label="$variable"}'}
               </div>
             }
           >
             <Input
               type="text"
-              aria-label="Stream selector"
-              placeholder="Optional stream selector"
+              aria-label={type === QueryType.DetectedFieldValues ? 'LogQL query' : 'Stream selector'}
+              placeholder={
+                type === QueryType.DetectedFieldValues ? 'LogQL query (required)' : 'Optional stream selector'
+              }
               value={stream}
               onChange={onStreamChange}
               onBlur={handleBlur}

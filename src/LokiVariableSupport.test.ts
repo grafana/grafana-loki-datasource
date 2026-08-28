@@ -4,6 +4,7 @@ import { dateTime, getDefaultTimeRange } from '@grafana/data';
 
 import { LokiVariableSupport } from './LokiVariableSupport';
 import { type LokiDatasource } from './datasource';
+import { createDetectedFieldValuesMetadataRequest } from './mocks/createDetectedFieldValuesMetadataRequest';
 import { createLokiDatasource } from './mocks/datasource';
 import { createMetadataRequest } from './mocks/metadataRequest';
 import { LokiVariableQueryType } from './types';
@@ -66,6 +67,26 @@ describe('LokiVariableSupport', () => {
     );
 
     expect(response).toEqual([{ text: 'value5' }]);
+  });
+
+  it('should return detected field values for Loki', async () => {
+    // detected_field/label1/values
+    jest
+      .spyOn(datasource, 'metadataRequest')
+      .mockImplementation(createDetectedFieldValuesMetadataRequest(['value1', 'value2']));
+
+    const response = await lokiVariableSupport.execute(
+      {
+        refId: 'test',
+        type: LokiVariableQueryType.DetectedFieldValues,
+        label: 'label1',
+        stream: '{label1="value1"}',
+      },
+      {},
+      getDefaultTimeRange()
+    );
+
+    expect(response).toEqual([{ text: 'value1' }, { text: 'value2' }]);
   });
 
   it('should call `metricFindQuery` with the correct parameters', async () => {
