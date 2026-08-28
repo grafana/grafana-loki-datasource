@@ -69,6 +69,10 @@ export const LokiVariableQueryEditor = ({ onChange, query, datasource, range }: 
     setLabel(newLabel.value || '');
   };
 
+  const onFieldChange = (e: FormEvent<HTMLInputElement>) => {
+    setLabel(e.currentTarget.value);
+  };
+
   const onStreamChange = (e: FormEvent<HTMLInputElement>) => {
     setStream(e.currentTarget.value);
   };
@@ -103,15 +107,34 @@ export const LokiVariableQueryEditor = ({ onChange, query, datasource, range }: 
                   : undefined
               }
             >
-              <Select
-                aria-label={type === QueryType.DetectedFieldValues ? 'Field' : 'Label'}
-                onChange={onLabelChange}
-                onBlur={handleBlur}
-                value={{ label: label, value: label }}
-                options={type === QueryType.LabelValues ? labelOptions : []}
-                width={16}
-                allowCustomValue
-              />
+              {type === QueryType.DetectedFieldValues ? (
+                // A plain input, like the LogQL query below: a Select with custom values
+                // only commits on explicit selection, so a typed field name is lost when
+                // the user moves on without pressing Enter.
+                <Input
+                  type="text"
+                  aria-label="Field"
+                  placeholder="Field name (required)"
+                  value={label}
+                  onChange={onFieldChange}
+                  onBlur={handleBlur}
+                  width={16}
+                  autoComplete="off"
+                  autoCorrect="off"
+                  autoCapitalize="none"
+                  spellCheck={false}
+                />
+              ) : (
+                <Select
+                  aria-label="Label"
+                  onChange={onLabelChange}
+                  onBlur={handleBlur}
+                  value={{ label: label, value: label }}
+                  options={labelOptions}
+                  width={16}
+                  allowCustomValue
+                />
+              )}
             </InlineField>
           </>
         )}

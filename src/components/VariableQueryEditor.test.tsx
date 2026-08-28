@@ -98,7 +98,8 @@ describe('LokiVariableQueryEditor', () => {
       select(screen.getByLabelText('Query type'), 'Detected field values', { container: document.body })
     );
 
-    await userEvent.type(screen.getByLabelText('Field'), 'method{enter}');
+    // No Enter after the field name: moving straight on must not lose the typed value
+    await userEvent.type(screen.getByLabelText('Field'), 'method');
     await userEvent.type(screen.getByLabelText('LogQL query'), '{{app="x"} | pattern "<method> <path>"');
 
     await waitFor(() => expect(screen.getByDisplayValue('{app="x"} | pattern "<method> <path>"')).toBeInTheDocument());
@@ -111,6 +112,21 @@ describe('LokiVariableQueryEditor', () => {
       stream: '{app="x"} | pattern "<method> <path>"',
       refId,
     });
+  });
+
+  test('Keeps a typed field name when tabbing out of the Field input', async () => {
+    const onChange = jest.fn();
+    props.query = { refId: 'test', type: LokiVariableQueryType.DetectedFieldValues, label: '', stream: '' };
+    render(<LokiVariableQueryEditor {...props} onChange={onChange} />);
+
+    await userEvent.type(screen.getByLabelText('Field'), 'method');
+    await userEvent.tab();
+
+    expect(screen.getByLabelText('LogQL query')).toHaveFocus();
+    expect(onChange).toHaveBeenCalledWith(
+      expect.objectContaining({ type: LokiVariableQueryType.DetectedFieldValues, label: 'method' })
+    );
+    expect(onChange).not.toHaveBeenCalledWith(expect.objectContaining({ label: '' }));
   });
 
   test('Resets label and stream and stops offering indexed labels when switching to Detected field values', async () => {
@@ -139,11 +155,12 @@ describe('LokiVariableQueryEditor', () => {
     // The labels fetched for Label values are neither refetched nor offered as options
     expect(props.datasource.languageProvider.fetchLabels).toHaveBeenCalledTimes(1);
 
-    const labelInput = screen.getByLabelText('Field');
-    await userEvent.click(labelInput);
+    // The Field control is a plain text input: no dropdown, so the indexed labels cannot be offered
+    const fieldInput = screen.getByLabelText('Field');
+    expect(fieldInput).not.toHaveAttribute('aria-expanded');
+    await userEvent.click(fieldInput);
     await userEvent.keyboard('{ArrowDown}');
 
-    expect(labelInput).toHaveAttribute('aria-expanded', 'true');
     expect(screen.queryByText('luna')).not.toBeInTheDocument();
     expect(screen.queryByText('moon')).not.toBeInTheDocument();
   });
