@@ -4,7 +4,7 @@ export function createDetectedFieldValuesMetadataRequest(labelsAndValues: string
   return async function metadataRequestMock(url: string) {
     const labelsMatch = url.match(lokiLabelsAndValuesEndpointRegex);
     if (labelsMatch) {
-      return labelsAndValues ?? [];
+      return labelsAndValues;
     } else {
       throw new Error(`Unexpected url error, ${url}`);
     }

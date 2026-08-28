@@ -747,7 +747,7 @@ export class LokiDatasource
           },
           { showErrorAlert: false }
         );
-        return Array.isArray(result) ? result.map((value: string) => ({ text: value })) : [];
+        return result.map((value: string) => ({ text: value }));
       } catch (error) {
         // Surface fetch failures (e.g. a Loki version without the detected_field API) to the variable UI
         // via a real Error (a raw FetchError is not one), keeping its fields (status, cancelled, traceId).

@@ -749,15 +749,12 @@ describe('LokiDatasource', () => {
       spy.mockClear();
     });
 
-    it('should map empty and non-array detected field values results to an empty array', async () => {
+    it('should map empty detected field values results to an empty array', async () => {
       const ds = createLokiDatasource(templateSrvStub);
       const query = { refId: 'test', type: LokiVariableQueryType.DetectedFieldValues, label: 'f', stream: '{a="b"}' };
       const spy = jest.spyOn(ds.languageProvider, 'fetchDetectedFieldValues');
 
       spy.mockResolvedValueOnce([]);
-      expect(await ds.metricFindQuery(query)).toEqual([]);
-
-      spy.mockResolvedValueOnce(new Error('parse error'));
       expect(await ds.metricFindQuery(query)).toEqual([]);
       spy.mockRestore();
     });

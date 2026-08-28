@@ -313,7 +313,7 @@ export default class LokiLanguageProvider extends LanguageProvider {
       throwError?: boolean;
     },
     requestOptions?: Partial<BackendSrvRequest>
-  ): Promise<string[] | Error> {
+  ): Promise<string[]> {
     // This function was named poorly, it's not detected label values, it's detected field values! :facepalm
     return this.fetchDetectedLabelValues(labelName, queryOptions, requestOptions);
   }
@@ -331,7 +331,7 @@ export default class LokiLanguageProvider extends LanguageProvider {
       throwError?: boolean;
     },
     requestOptions?: Partial<BackendSrvRequest>
-  ): Promise<string[] | Error> {
+  ): Promise<string[]> {
     const label = encodeURIComponent(this.datasource.interpolateString(labelName));
 
     const interpolatedExpr =
