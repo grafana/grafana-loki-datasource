@@ -1,6 +1,6 @@
 {
   "name": "loki",
-  "version": "13.1.0",
+  "version": "13.1.1",
   "scripts": {
     "build": "webpack -c ./.config/webpack/webpack.config.ts --env production",
     "dev": "webpack -w -c ./.config/webpack/webpack.config.ts --env development",
@@ -73,14 +73,14 @@
   },
   "engines": {
     "node": ">=24",
-    "npm": ">=11.12.1"
+    "npm": ">=11.16.0"
   },
   "dependencies": {
     "@emotion/css": "11.13.5",
     "@grafana/assistant": "0.1.30",
     "@grafana/data": "13.1.1",
     "@grafana/i18n": "13.1.1",
-    "@grafana/lezer-logql": "0.4.0",
+    "@grafana/lezer-logql": "0.4.1",
     "@grafana/monaco-logql": "0.0.9",
     "@grafana/plugin-ui": "0.17.3",
     "@grafana/runtime": "13.1.1",
@@ -98,5 +98,8 @@
     "rxjs": "7.8.2",
     "uuid": "14.0.1"
   },
-  "packageManager": "npm@11.18.0"
+  "packageManager": "npm@11.18.0",
+  "overrides": {
+    "serialize-javascript": "^7.0.5"
+  }
 }

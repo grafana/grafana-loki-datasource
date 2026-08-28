@@ -1,5 +1,13 @@
 # Changelog
 
+## 13.1.1
+
+- Bump go v1.26.7 and grafana-plugin-sdk-go v0.296.4  ([#134](https://github.com/grafana/grafana-loki-datasource/pull/134))
+- Chore: update lezer/logql ([#186](https://github.com/grafana/grafana-loki-datasource/pull/186))
+- Removing abstraction related logic ([#182](https://github.com/grafana/grafana-loki-datasource/pull/182))
+- chore: bump dependencies for vuln fixes ([#183](https://github.com/grafana/grafana-loki-datasource/pull/183))
+- Tests: Update frontend datetime tests not to expect Moment internals ([#179](https://github.com/grafana/grafana-loki-datasource/pull/179))
+
 ## 13.1.0
 
 - Persist disabled operations in Loki query builder ([#139](https://github.com/grafana/grafana-loki-datasource/pull/139))

@@ -28,7 +28,6 @@ import (
 	scope "github.com/grafana/grafana/apps/scope/pkg/apis/scope/v0alpha1"
 
 	"github.com/grafana/grafana-loki-datasource/pkg/loki/kinds/dataquery"
-	schemas "github.com/grafana/schemads"
 )
 
 const (
@@ -36,7 +35,6 @@ const (
 	flagLokiRunQueriesInParallel  = "lokiRunQueriesInParallel"
 	flagLogQLScope                = "logQLScope"
 	flagLokiExperimentalStreaming = "lokiExperimentalStreaming"
-	flagDsAbstractionApp          = "dsAbstractionApp"
 	fromAlertHeaderName           = "FromAlert"
 )
 
@@ -68,28 +66,11 @@ func NewDatasource(ctx context.Context, settings backend.DataSourceInstanceSetti
 		return nil, backend.DownstreamError(fmt.Errorf("error creating http client: %w", err))
 	}
 
-	var schemaDs *schemas.SchemaDatasource
-	var schemaProv *SchemaProvider
-	grafCfg := config.GrafanaConfigFromContext(ctx)
-	if grafCfg != nil && grafCfg.FeatureToggles().IsEnabled(flagDsAbstractionApp) {
-		schemaProv = NewSchemaProvider(client, settings.URL, logger, tracer)
-		schemaDs = schemas.NewSchemaDatasource(
-			schemaProv,
-			schemaProv,
-			schemaProv,
-			nil,
-			schemaProv,
-			nil,
-		)
-	}
-
 	return &DataSource{
 		info: &datasourceInfo{
-			HTTPClient:       client,
-			URL:              settings.URL,
-			streams:          make(map[string]data.FrameJSONCache),
-			schemaDatasource: schemaDs,
-			schemaProvider:   schemaProv,
+			HTTPClient: client,
+			URL:        settings.URL,
+			streams:    make(map[string]data.FrameJSONCache),
 		},
 		tracer: tracer,
 		logger: logger,
@@ -111,9 +92,6 @@ type datasourceInfo struct {
 	// open streams
 	streams   map[string]data.FrameJSONCache
 	streamsMu sync.RWMutex
-
-	schemaDatasource *schemas.SchemaDatasource
-	schemaProvider   *SchemaProvider
 }
 
 type QueryJSONModel struct {
@@ -142,10 +120,6 @@ func (ds *DataSource) CallResource(ctx context.Context, req *backend.CallResourc
 }
 
 func callResource(ctx context.Context, req *backend.CallResourceRequest, sender backend.CallResourceResponseSender, dsInfo *datasourceInfo, plog log.Logger, tracer trace.Tracer) error {
-	if strings.HasPrefix(req.Path, schemas.BaseResourcePath) && dsInfo.schemaDatasource != nil {
-		return dsInfo.schemaDatasource.CallResource(ctx, req, sender)
-	}
-
 	url := req.URL
 
 	lokiURL := fmt.Sprintf("/loki/api/v1/%s", url)
@@ -225,17 +199,7 @@ func (ds *DataSource) QueryData(ctx context.Context, req *backend.QueryDataReque
 func queryData(ctx context.Context, req *backend.QueryDataRequest, dsInfo *datasourceInfo, responseOpts ResponseOpts, tracer trace.Tracer, plog log.Logger, runInParallel bool, logQLScopes bool) (*backend.QueryDataResponse, error) {
 	result := backend.NewQueryDataResponse()
 
-	req, sqlKinds, sqlErrs := normalizeGrafanaSQLRequest(ctx, req, dsInfo)
-	for refID, e := range sqlErrs {
-		result.Responses[refID] = backend.DataResponse{
-			Error:       e,
-			ErrorSource: backend.ErrorSourceDownstream,
-		}
-	}
 	if len(req.Queries) == 0 {
-		if len(result.Responses) > 0 {
-			return result, nil
-		}
 		return result, fmt.Errorf("query contains no queries")
 	}
 
@@ -279,20 +243,6 @@ func queryData(ctx context.Context, req *backend.QueryDataRequest, dsInfo *datas
 		}
 	}
 	plog.Debug("Executed queries", "duration", time.Since(start), "queriesLength", len(queries), "runInParallel", runInParallel)
-
-	for refID, kind := range sqlKinds {
-		dr, ok := result.Responses[refID]
-		if !ok || dr.Error != nil {
-			continue
-		}
-		switch kind {
-		case sqlKindMetric:
-			dr.Frames = flattenMetricsToTabular(dr.Frames, plog)
-		case sqlKindLog:
-			dr.Frames = flattenLogsToTabular(dr.Frames, responseOpts.logsDataplane, plog)
-		}
-		result.Responses[refID] = dr
-	}
 
 	return result, err
 }
