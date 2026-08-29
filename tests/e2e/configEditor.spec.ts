@@ -1,6 +1,7 @@
 import { expect, test } from '@grafana/plugin-e2e';
 
 import { type LokiOptions } from '../../src/types';
+import { isCloudRun, resolveDataSourceUid } from './env';
 
 test.describe('Config editor', () => {
   test.describe.configure({ mode: 'serial' });
@@ -33,6 +34,10 @@ test.describe('Config editor', () => {
   });
 
   test.describe('provisioned datasource', () => {
+    test.beforeEach(() => {
+      test.skip(isCloudRun, 'These assertions depend on the local provisioning file.');
+    });
+
     test('should load provisioned URL', async ({ readProvisionedDataSource, gotoDataSourceConfigPage, page }) => {
       const ds = await readProvisionedDataSource<LokiOptions>({ fileName: 'datasources.yml' });
       await gotoDataSourceConfigPage(ds.uid);
@@ -61,6 +66,8 @@ test.describe('Config editor', () => {
       gotoDataSourceConfigPage,
       page,
     }) => {
+      test.skip(isCloudRun, 'This test targets the locally provisioned data source.');
+
       const ds = await readProvisionedDataSource<LokiOptions>({ fileName: 'datasources.yml' });
       const configPage = await gotoDataSourceConfigPage(ds.uid);
 
@@ -74,6 +81,22 @@ test.describe('Config editor', () => {
       await page.getByRole('textbox', { name: 'Data source connection URL' }).fill('http://localhost:1');
       await page.getByRole('button', { name: 'Save & test' }).click();
       await expect(configPage).toHaveAlert('error');
+    });
+  });
+
+  test.describe('cloud datasource', () => {
+    test.beforeEach(() => {
+      test.skip(!isCloudRun, 'This test targets the data source provisioned on the shared Cloud instance.');
+    });
+
+    test('should pass health check for the Cloud-provisioned datasource', async ({
+      gotoDataSourceConfigPage,
+      page,
+    }) => {
+      const configPage = await gotoDataSourceConfigPage(await resolveDataSourceUid(page));
+
+      await page.getByRole('button', { name: /^(Save & test|Test)$/ }).click();
+      await expect(configPage).toHaveAlert('success', { hasNotText: 'Error' });
     });
   });
 });
