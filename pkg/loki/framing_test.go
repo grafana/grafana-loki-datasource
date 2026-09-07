@@ -126,6 +126,27 @@ func TestEmptyLogsResponseWithStatsKeepsLogsFrame(t *testing.T) {
 	require.NotEqual(t, "Query statistics", dr.Frames[0].Name)
 }
 
+func TestEmptyMetricResponseWithStatsAndWarningsDropsPlaceholderFrame(t *testing.T) {
+	body := []byte(`{
+		"status": "success",
+		"warnings": ["Some logs may have been dropped by Adaptive Logs sampling"],
+		"data": {
+			"resultType": "matrix",
+			"result": [],
+			"stats": {
+				"summary": {
+					"execTime": 0.001
+				}
+			}
+		}
+	}`)
+	query := lokiQuery{Expr: "count_over_time({app=\"foo\"}[1m])", Step: time.Second, QueryType: QueryTypeRange, Direction: DirectionBackward, RefID: "A"}
+
+	dr, err := runQuery(context.Background(), makeMockedAPI(http.StatusOK, "application/json", body, nil), &query, ResponseOpts{}, backend.NewLoggerWith("logger", "test"))
+	require.NoError(t, err)
+	require.Empty(t, dr.Frames)
+}
+
 func TestErrorResponse(t *testing.T) {
 	// NOTE: when there is an error-response, it comes with
 	// HTTP code 400, and the format seems to change between versions:

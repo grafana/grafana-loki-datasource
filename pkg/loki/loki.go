@@ -286,13 +286,10 @@ func runQuery(ctx context.Context, api *LokiAPI, query *lokiQuery, responseOpts 
 
 	kept := res.Frames[:0]
 	for _, frame := range res.Frames {
-		// Promlib creates a field-less "Query statistics" frame when Loki
-		// returns stats but no series. That empty schema breaks frontend conventions, so
-		// drop those placeholders. Keep notice-only frames (warnings).
+		// Promlib creates field-less "Query statistics" / "Warnings" frames
+		// when Loki returns stats or notices but no series. That empty schema
+		// breaks frontend conventions, so drop those placeholders.
 		if len(frame.Fields) < 2 {
-			if frameHasNotices(frame) {
-				kept = append(kept, frame)
-			}
 			continue
 		}
 
@@ -303,13 +300,13 @@ func runQuery(ctx context.Context, api *LokiAPI, query *lokiQuery, responseOpts 
 		}
 		kept = append(kept, frame)
 	}
-	res.Frames = kept
+	if len(kept) == 0 {
+		res.Frames = nil
+	} else {
+		res.Frames = kept
+	}
 
 	return res, nil
-}
-
-func frameHasNotices(frame *data.Frame) bool {
-	return frame != nil && frame.Meta != nil && len(frame.Meta.Notices) > 0
 }
 
 func isFeatureEnabled(ctx context.Context, feature string) bool {
