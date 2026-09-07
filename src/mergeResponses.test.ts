@@ -1351,6 +1351,22 @@ describe('mergeFrames', () => {
     });
   });
 
+  it('correctly handles empty responses with stats', () => {
+    const { queryStatisticsFrame } = getMockFrames();
+    const spy = jest.spyOn(console, 'error');
+
+    const responseA: DataQueryResponse = {
+      data: [queryStatisticsFrame],
+    };
+    const responseB: DataQueryResponse = {
+      data: [queryStatisticsFrame],
+    };
+    expect(combineResponses(responseA, responseB)).toEqual({
+      data: [queryStatisticsFrame],
+    });
+    expect(spy).not.toHaveBeenCalled();
+  });
+
   it('merging exactly the same data produces the same data', () => {
     const { logFrameA } = getMockFrames();
 

@@ -141,8 +141,16 @@ function mergeFrames(dest: DataFrame, source: DataFrame) {
   const sourceTimeField = source.fields.find((field) => field.type === FieldType.time);
   const sourceIdField = source.fields.find((field) => field.type === FieldType.string && field.name === 'id');
 
+  /**
+   * Empty responses containinig only query statistics or warnings don't have source/dest time fields to merge,
+   * so early return instead of logging a noisy non-error.
+   */
+  if (!sourceTimeField && !destTimeField) {
+    return;
+  }
+
   if (!destTimeField || !sourceTimeField) {
-    console.error(new Error(`Time fields not found in the data frames`));
+    console.error(new Error(`Time field not found in the ${!destTimeField ? 'destination' : 'source'} data frame`));
     return;
   }
 

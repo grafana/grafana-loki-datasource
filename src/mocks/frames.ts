@@ -325,6 +325,31 @@ export function getMockFrames() {
     length: 2,
   };
 
+  const queryStatisticsFrame: DataFrame = {
+    refId: 'A',
+    name: 'Query statistics',
+    fields: [],
+    meta: {
+      custom: {
+        stats: {
+          cache: {
+            index: {
+              bytesReceived: 0,
+              bytesSent: 0,
+              downloadTime: 0,
+              entriesFound: 0,
+              entriesRequested: 0,
+              entriesStored: 0,
+              queryLengthServed: 0,
+              requests: 0,
+            },
+          },
+        },
+      },
+    },
+    length: 0,
+  };
+
   return {
     logFrameA,
     logFrameB,
@@ -334,5 +359,6 @@ export function getMockFrames() {
     metricFrameC,
     metricFrameAB,
     emptyFrame,
+    queryStatisticsFrame,
   };
 }
