@@ -300,11 +300,7 @@ func runQuery(ctx context.Context, api *LokiAPI, query *lokiQuery, responseOpts 
 		}
 		kept = append(kept, frame)
 	}
-	if len(kept) == 0 {
-		res.Frames = nil
-	} else {
-		res.Frames = kept
-	}
+	res.Frames = kept
 
 	return res, nil
 }
