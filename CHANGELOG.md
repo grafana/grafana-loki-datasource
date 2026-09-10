@@ -1,7 +1,10 @@
 # Changelog
 
-## 13.1.2
+## 13.2.0
 
+- Support detected field values in dashboard variables ([#177](https://github.com/grafana/grafana-loki-datasource/pull/177))
+- Fix: drop query statistics from empty frames ([#192](https://github.com/grafana/grafana-loki-datasource/pull/192))
+- Fix: do not keep any extra frame when the response is empty ([#193](https://github.com/grafana/grafana-loki-datasource/pull/193))
 - Resolve high-severity CVEs in `golang.org/x/crypto`, `browserslist`, and `fast-uri` ([#191](https://github.com/grafana/grafana-loki-datasource/pull/191), [#129](https://github.com/grafana/grafana-loki-datasource/pull/129))
 
 ## 13.1.1
