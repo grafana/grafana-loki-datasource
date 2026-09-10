@@ -98,7 +98,7 @@
     "rxjs": "7.8.2",
     "uuid": "14.0.2"
   },
-  "packageManager": "npm@11.19.1",
+  "packageManager": "npm@12.0.2",
   "overrides": {
     "serialize-javascript": "7.1.0"
   }
