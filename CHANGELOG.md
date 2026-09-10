@@ -1,5 +1,9 @@
 # Changelog
 
+## 13.1.2
+
+- Resolve high-severity CVEs in `golang.org/x/crypto`, `browserslist`, and `fast-uri` ([#191](https://github.com/grafana/grafana-loki-datasource/pull/191), [#129](https://github.com/grafana/grafana-loki-datasource/pull/129))
+
 ## 13.1.1
 
 - Bump go v1.26.7 and grafana-plugin-sdk-go v0.296.4  ([#134](https://github.com/grafana/grafana-loki-datasource/pull/134))
