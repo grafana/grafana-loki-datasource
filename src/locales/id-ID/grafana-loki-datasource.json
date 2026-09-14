@@ -1,0 +1,13 @@
+{
+  "logs": {
+    "fields": {
+      "type": {
+        "loki": {
+          "indexed-label_other": "Label yang diindeks",
+          "parsedl-label_other": "Bidang yang diuraikan",
+          "structured-metadata_other": "Metadata terstruktur"
+        }
+      }
+    }
+  }
+}

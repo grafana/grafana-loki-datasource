@@ -1,0 +1,16 @@
+{
+  "logs": {
+    "fields": {
+      "type": {
+        "loki": {
+          "indexed-label_one": "Étiquettes indexées",
+          "indexed-label_other": "Étiquettes indexées",
+          "parsedl-label_one": "Champs analysés",
+          "parsedl-label_other": "Champs analysés",
+          "structured-metadata_one": "Métadonnée structurée",
+          "structured-metadata_other": "Métadonnées structurées"
+        }
+      }
+    }
+  }
+}
