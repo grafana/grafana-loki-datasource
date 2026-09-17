@@ -211,7 +211,7 @@ describe('LokiDatasource', () => {
   });
 
   describe('query source tags', () => {
-    const runQuery = async (app: string, supportingQueryType?: string) => {
+    const runQuery = async (app: string, supportingQueryType?: SupportingQueryType) => {
       const ds = createLokiDatasource(templateSrvStub);
       const fetchMock = jest
         .fn()
@@ -226,16 +226,13 @@ describe('LokiDatasource', () => {
       return fetchMock.mock.calls[0][0].data.queries[0];
     };
 
-    it.each([undefined, ''])('tags Explore queries with an unset source (%s)', async (source) => {
-      expect(await runQuery(CoreApp.Explore, source)).toHaveProperty('supportingQueryType', 'grafana-explore');
+    it('tags Explore queries with an unset source', async () => {
+      expect(await runQuery(CoreApp.Explore)).toHaveProperty('supportingQueryType', 'grafana-explore');
     });
 
-    it.each([...Object.values(SupportingQueryType), 'grafana-lokiexplore-app'])(
-      'preserves the existing source %s',
-      async (source) => {
-        expect(await runQuery(CoreApp.Explore, source)).toHaveProperty('supportingQueryType', source);
-      }
-    );
+    it.each(Object.values(SupportingQueryType))('preserves the existing source %s', async (source) => {
+      expect(await runQuery(CoreApp.Explore, source)).toHaveProperty('supportingQueryType', source);
+    });
 
     it.each([CoreApp.Dashboard, CoreApp.Unknown, 'grafana-lokiexplore-app'])(
       'does not tag queries from %s as Explore',
