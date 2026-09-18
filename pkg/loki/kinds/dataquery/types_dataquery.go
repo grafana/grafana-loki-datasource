@@ -38,6 +38,7 @@ const (
 type SupportingQueryType string
 
 const (
+	SupportingQueryTypeExplore        SupportingQueryType = "grafana-explore"
 	SupportingQueryTypeLogsVolume     SupportingQueryType = "logsVolume"
 	SupportingQueryTypeLogsSample     SupportingQueryType = "logsSample"
 	SupportingQueryTypeDataSample     SupportingQueryType = "dataSample"
