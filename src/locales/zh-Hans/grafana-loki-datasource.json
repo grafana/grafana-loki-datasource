@@ -1,0 +1,13 @@
+{
+  "logs": {
+    "fields": {
+      "type": {
+        "loki": {
+          "indexed-label_other": "索引标签",
+          "parsedl-label_other": "已解析字段",
+          "structured-metadata_other": "结构化元数据"
+        }
+      }
+    }
+  }
+}
