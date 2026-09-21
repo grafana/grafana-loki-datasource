@@ -335,6 +335,7 @@ export class LokiDatasource
       .map((q) => ({
         ...q,
         maxLines: q.maxLines ?? this.maxLines,
+        supportingQueryType: q.supportingQueryType || (request.app === CoreApp.Explore ? SupportingQueryType.Explore : undefined),
         scopes:
           config.featureToggles.scopeFilters && config.featureToggles.logQLScope
             ? request.scopes?.flatMap((scope) => scope.spec.filters)
