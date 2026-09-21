@@ -1,18 +1,19 @@
 import { expect, test } from '@grafana/plugin-e2e';
+import { type Page } from '@playwright/test';
 
-const DS_UID = 'loki-e2e';
+import { isCloudRun, resolveDataSourceUid } from './env';
 
-function exploreUrl(expr: string, editorMode = 'code'): string {
+function exploreUrl(dataSourceUid: string, expr: string, editorMode = 'code'): string {
   const panes = JSON.stringify({
     a: {
-      datasource: DS_UID,
+      datasource: dataSourceUid,
       queries: [
         {
           refId: 'A',
           expr,
           queryType: 'range',
           editorMode,
-          datasource: { type: 'loki', uid: DS_UID },
+          datasource: { type: 'loki', uid: dataSourceUid },
         },
       ],
       range: { from: 'now-3h', to: 'now' },
@@ -21,23 +22,23 @@ function exploreUrl(expr: string, editorMode = 'code'): string {
   return `/explore?orgId=1&schemaVersion=1&panes=${encodeURIComponent(panes)}`;
 }
 
+async function navigateToExplore(page: Page, expr: string, editorMode = 'code') {
+  await page.goto(exploreUrl(await resolveDataSourceUid(page), expr, editorMode));
+}
+
 test.describe('Query editor', () => {
   test.describe.configure({ mode: 'serial' });
 
   test.describe('rendering', () => {
-    test(
-      'smoke: renders Builder and Code mode options',
-      { tag: '@plugins' },
-      async ({ page }) => {
-        await page.goto(exploreUrl(''));
+    test('smoke: renders Builder and Code mode options', { tag: '@plugins' }, async ({ page }) => {
+      await navigateToExplore(page, '');
 
-        await expect(page.getByRole('radio', { name: 'Builder' })).toBeVisible();
-        await expect(page.getByRole('radio', { name: 'Code' })).toBeVisible();
-      }
-    );
+      await expect(page.getByRole('radio', { name: 'Builder' })).toBeVisible();
+      await expect(page.getByRole('radio', { name: 'Code' })).toBeVisible();
+    });
 
     test('Code mode shows the LogQL editor', async ({ page }) => {
-      await page.goto(exploreUrl('', 'code'));
+      await navigateToExplore(page, '', 'code');
 
       await expect(page.getByRole('radio', { name: 'Code' })).toBeChecked();
       await expect(
@@ -46,7 +47,7 @@ test.describe('Query editor', () => {
     });
 
     test('Builder mode shows Label filters UI', async ({ page }) => {
-      await page.goto(exploreUrl('', 'builder'));
+      await navigateToExplore(page, '', 'builder');
 
       await expect(page.getByRole('radio', { name: 'Builder' })).toBeChecked();
       await expect(page.getByText('Label filters')).toBeVisible();
@@ -58,7 +59,7 @@ test.describe('Query editor', () => {
 
   test.describe('Code mode', () => {
     test('can type a LogQL expression into the editor', async ({ page }) => {
-      await page.goto(exploreUrl('', 'code'));
+      await navigateToExplore(page, '', 'code');
 
       await expect(page.getByRole('radio', { name: 'Code' })).toBeChecked();
 
@@ -73,7 +74,7 @@ test.describe('Query editor', () => {
     });
 
     test('switching from Builder to Code preserves mode after confirmation', async ({ page }) => {
-      await page.goto(exploreUrl('', 'builder'));
+      await navigateToExplore(page, '', 'builder');
       await expect(page.getByRole('radio', { name: 'Builder' })).toBeChecked();
 
       await page.getByRole('radio', { name: 'Code' }).click();
@@ -90,7 +91,7 @@ test.describe('Query editor', () => {
 
   test.describe('Builder mode', () => {
     test('shows line filter input for filtering log content', async ({ page }) => {
-      await page.goto(exploreUrl('', 'builder'));
+      await navigateToExplore(page, '', 'builder');
 
       await expect(page.getByRole('radio', { name: 'Builder' })).toBeChecked();
       await expect(page.getByText('Label filters')).toBeVisible();
@@ -101,6 +102,9 @@ test.describe('Query editor', () => {
 
 test.describe('Query editor with fixture data', () => {
   test.describe.configure({ mode: 'serial' });
+  test.beforeEach(() => {
+    test.skip(isCloudRun, 'These queries depend on data seeded into the local Loki container.');
+  });
 
   test('Code mode: log stream query returns results', async ({ page }) => {
     const responsePromise = page.waitForResponse(
@@ -118,7 +122,7 @@ test.describe('Query editor with fixture data', () => {
       { timeout: 15000 }
     );
 
-    await page.goto(exploreUrl('{job="e2e-test"}'));
+    await navigateToExplore(page, '{job="e2e-test"}');
     const response = await responsePromise;
     expect(response.status()).toBe(200);
     const body = await response.json();
@@ -141,7 +145,7 @@ test.describe('Query editor with fixture data', () => {
       { timeout: 15000 }
     );
 
-    await page.goto(exploreUrl('{job="e2e-test", level="error"}'));
+    await navigateToExplore(page, '{job="e2e-test", level="error"}');
     const response = await responsePromise;
     expect(response.status()).toBe(200);
     const body = await response.json();
@@ -164,7 +168,7 @@ test.describe('Query editor with fixture data', () => {
       { timeout: 15000 }
     );
 
-    await page.goto(exploreUrl('rate({job="e2e-test"}[5m])'));
+    await navigateToExplore(page, 'rate({job="e2e-test"}[5m])');
     const response = await responsePromise;
     expect(response.status()).toBe(200);
     const body = await response.json();
