@@ -7,15 +7,33 @@ import {
   type DataQueryError,
 } from '@grafana/data';
 
-import { LokiQueryType } from './dataquery';
+import { LokiQueryDirection, LokiQueryType } from './dataquery';
 import { getDerivedFields } from './getDerivedFields';
 import { makeTableFrames } from './makeTableFrames';
 import { getExpressionFromExecutedQuery, getHighlighterExpressionsFromQuery } from './queryUtils';
 import { dataFrameHasLokiError } from './responseUtils';
+import { sortDataFrameByTime, SortDirection } from './sortDataFrame';
 import { type DerivedFieldConfig, type LokiQuery } from './types';
 
 function isMetricFrame(frame: DataFrame): boolean {
   return frame.fields.every((field) => field.type === FieldType.time || field.type === FieldType.number);
+}
+
+// Classic frames carry nanoseconds in the `tsNs` string field, not `.nanos`; copy it over so
+// sortDataFrameByTime can break ties. No-op for dataplane frames, which already have `.nanos`.
+function withTimeNanos(frame: DataFrame): DataFrame {
+  const timeField = frame.fields.find((field) => field.type === FieldType.time);
+  const tsNsField = frame.fields.find((field) => field.name === 'tsNs');
+  if (timeField === undefined || timeField.nanos !== undefined || tsNsField === undefined) {
+    return frame;
+  }
+
+  const nanos = tsNsField.values.map((tsNs: string) => Number(tsNs.slice(-6)));
+
+  return {
+    ...frame,
+    fields: frame.fields.map((field) => (field === timeField ? { ...field, nanos } : field)),
+  };
 }
 
 // returns a new frame, with meta shallow merged with its original meta
@@ -53,10 +71,14 @@ function processStreamFrame(
 
   const newFrame = setFrameMeta(frame, meta);
   const derivedFields = getDerivedFields(newFrame, derivedFieldConfigs);
-  return {
+  const frameWithDerivedFields = {
     ...newFrame,
     fields: [...newFrame.fields, ...derivedFields],
   };
+
+  // @grafana/data's sortDataFrame ignores `.nanos` when breaking ties (grafana/grafana#72351).
+  const sortDirection = query?.direction === LokiQueryDirection.Forward ? SortDirection.Ascending : SortDirection.Descending;
+  return sortDataFrameByTime(withTimeNanos(frameWithDerivedFields), sortDirection);
 }
 
 function processStreamsFrames(

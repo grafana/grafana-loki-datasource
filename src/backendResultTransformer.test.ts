@@ -3,6 +3,7 @@ import { cloneDeep } from 'lodash';
 import { type DataFrame, type DataQueryResponse, type Field, FieldType } from '@grafana/data';
 
 import { transformBackendResult } from './backendResultTransformer';
+import { LokiQueryDirection } from './dataquery';
 
 // needed because the derived-fields functionality calls it
 jest.mock('@grafana/runtime', () => ({
@@ -68,7 +69,18 @@ describe('backendResultTransformer', () => {
   it('processes a logs dataframe correctly', () => {
     const response: DataQueryResponse = { data: [cloneDeep(inputFrame)] };
 
+    // With no explicit direction, Loki's own default (backward / newest-first) applies, so rows
+    // come back reordered newest-first, and the derived `.nanos` (from `tsNs`) travels with them.
     const expectedFrame = cloneDeep(inputFrame);
+    expectedFrame.fields[0].values = [1645030247027, 1645030244810];
+    expectedFrame.fields[0].nanos = [735040, 757120];
+    expectedFrame.fields[1].values = ['line2', 'line1'];
+    expectedFrame.fields[2].values = [
+      { level: 'error', code: '41🌙' },
+      { level: 'info', code: '41🌙' },
+    ];
+    expectedFrame.fields[3].values = ['1645030247027735040', '1645030244810757120'];
+    expectedFrame.fields[4].values = ['id2', 'id1'];
     expectedFrame.meta = {
       ...expectedFrame.meta,
       preferredVisualisationType: 'logs',
@@ -92,6 +104,66 @@ describe('backendResultTransformer', () => {
       []
     );
     expect(result).toEqual(expected);
+  });
+
+  it('sorts tied millisecond timestamps by nanosecond precision, respecting query direction', () => {
+    const tiedFrame: DataFrame = {
+      refId: 'A',
+      meta: {
+        executedQueryString: LOKI_EXPR,
+        custom: { frameType: 'LabeledTimeValues' },
+      },
+      fields: [
+        {
+          name: 'Time',
+          type: FieldType.time,
+          config: {},
+          // both rows share the same millisecond; only the nanosecond remainder differs
+          values: [1645030244810, 1645030244810],
+        },
+        {
+          name: 'Line',
+          type: FieldType.string,
+          config: {},
+          values: ['first-ingested', 'second-ingested'],
+        },
+        {
+          name: 'labels',
+          type: FieldType.other,
+          config: {},
+          values: [{ level: 'info' }, { level: 'info' }],
+        },
+        {
+          name: 'tsNs',
+          type: FieldType.string,
+          config: {},
+          values: ['1645030244810100000', '1645030244810900000'],
+        },
+        {
+          name: 'id',
+          type: FieldType.string,
+          config: {},
+          values: ['id1', 'id2'],
+        },
+      ],
+      length: 2,
+    };
+
+    const backwardResult = transformBackendResult(
+      { data: [cloneDeep(tiedFrame)] },
+      [{ refId: 'A', expr: LOKI_EXPR, direction: LokiQueryDirection.Backward }],
+      []
+    ).data[0];
+    // Backward (newest-first): the later nanosecond timestamp comes first.
+    expect(backwardResult.fields[1].values).toEqual(['second-ingested', 'first-ingested']);
+
+    const forwardResult = transformBackendResult(
+      { data: [cloneDeep(tiedFrame)] },
+      [{ refId: 'A', expr: LOKI_EXPR, direction: LokiQueryDirection.Forward }],
+      []
+    ).data[0];
+    // Forward (oldest-first): the earlier nanosecond timestamp comes first.
+    expect(forwardResult.fields[1].values).toEqual(['first-ingested', 'second-ingested']);
   });
 
   it('applies maxLines correctly', () => {
