@@ -214,7 +214,11 @@ function runSplitGroupedQueries(
 
     const group = requests[requestGroup];
     const range = group.partition[requestN - 1];
-    const targets = adjustTargetsFromResponseState(group.request.targets, mergedResponse);
+    const targets = withChunkNanosecondBounds(
+      adjustTargetsFromResponseState(group.request.targets, mergedResponse),
+      range,
+      group.request.range
+    );
 
     if (!targets.length) {
       nextRequest();
@@ -340,6 +344,21 @@ function querySupportsSplitting(query: LokiQuery) {
     // because it is interpolated on the backend with the split timeRange
     !isQueryWithRangeVariable(query.expr)
   );
+}
+
+// startNs and endNs refine the original range edges. Interior chunk edges are
+// exact milliseconds, so only the chunk that still uses that edge keeps the bound.
+function withChunkNanosecondBounds(targets: LokiQuery[], chunk: TimeRange, original: TimeRange): LokiQuery[] {
+  return targets.map((target) => {
+    if (!target.startNs && !target.endNs) {
+      return target;
+    }
+    return {
+      ...target,
+      startNs: chunk.from.valueOf() === original.from.valueOf() ? target.startNs : undefined,
+      endNs: chunk.to.valueOf() === original.to.valueOf() ? target.endNs : undefined,
+    };
+  });
 }
 
 export function runSplitQuery(
