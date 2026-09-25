@@ -1,5 +1,11 @@
 # Changelog
 
+## 13.2.1
+
+- Upgrade lezer-logql ([#198](https://github.com/grafana/grafana-loki-datasource/pull/198))
+- Loki: Tag Explore queries with their source ([#196](https://github.com/grafana/grafana-loki-datasource/pull/196))
+- Fix security vulnerabilities (CVE-2026-84375) ([#200](https://github.com/grafana/grafana-loki-datasource/pull/200))
+
 ## 13.2.0
 
 - Support detected field values in dashboard variables ([#177](https://github.com/grafana/grafana-loki-datasource/pull/177))
