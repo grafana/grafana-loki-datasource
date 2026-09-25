@@ -1,12 +1,16 @@
 import { DashboardLoadedEvent, DataSourcePlugin } from '@grafana/data';
+import { initPluginTranslations } from '@grafana/i18n';
 import { getAppEvents } from '@grafana/runtime';
 
 import LokiCheatSheet from './components/LokiCheatSheet';
 import LokiQueryEditorByApp from './components/LokiQueryEditorByApp';
 import { ConfigEditor } from './configuration/ConfigEditor';
 import { LokiDatasource } from './datasource';
+import pluginJson from './plugin.json';
 import { onDashboardLoadedHandler } from './tracking';
 import { type LokiQuery } from './types';
+
+await initPluginTranslations(pluginJson.id);
 
 export const plugin = new DataSourcePlugin(LokiDatasource)
   .setQueryEditor(LokiQueryEditorByApp)
