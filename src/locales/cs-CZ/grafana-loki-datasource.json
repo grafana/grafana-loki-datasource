@@ -1,0 +1,22 @@
+{
+  "logs": {
+    "fields": {
+      "type": {
+        "loki": {
+          "indexed-label_one": "Indexované štítky",
+          "indexed-label_few": "Indexované štítky",
+          "indexed-label_many": "Indexované štítky",
+          "indexed-label_other": "Indexované štítky",
+          "parsedl-label_one": "Analyzovaná pole",
+          "parsedl-label_few": "Analyzovaná pole",
+          "parsedl-label_many": "Analyzovaná pole",
+          "parsedl-label_other": "Analyzovaná pole",
+          "structured-metadata_one": "Strukturovaná metadata",
+          "structured-metadata_few": "Strukturovaná metadata",
+          "structured-metadata_many": "Strukturovaná metadata",
+          "structured-metadata_other": "Strukturovaná metadata"
+        }
+      }
+    }
+  }
+}
