@@ -5,8 +5,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/grafana/grafana-plugin-sdk-go/backend"
 	"github.com/grafana/grafana-loki-datasource/pkg/loki/kinds/dataquery"
+	"github.com/grafana/grafana-plugin-sdk-go/backend"
 	"github.com/stretchr/testify/require"
 )
 
@@ -212,6 +212,89 @@ func TestParseQuery(t *testing.T) {
 		require.Equal(t, `count_over_time({service_name="apache"}[15s])`, models[0].LimitsContext.Expr)
 		require.Equal(t, to.Truncate(time.Millisecond), models[0].LimitsContext.To)
 		require.Equal(t, fullFrom.Truncate(time.Millisecond), models[0].LimitsContext.From)
+	})
+
+	t.Run("keeps the request time range when nanosecond bounds are absent", func(t *testing.T) {
+		from := time.Unix(1_700_000_000, 0).UTC()
+		to := from.Add(time.Hour)
+		queryContext := &backend.QueryDataRequest{
+			Queries: []backend.DataQuery{
+				{
+					JSON: []byte(`{"expr": "{app=\"test\"}", "refId": "A"}`),
+					TimeRange: backend.TimeRange{
+						From: from,
+						To:   to,
+					},
+					Interval: time.Second,
+				},
+			},
+		}
+		models, err := parseQuery(queryContext, false)
+		require.NoError(t, err)
+		require.True(t, models[0].Start.Equal(from))
+		require.True(t, models[0].End.Equal(to))
+	})
+
+	t.Run("uses nanosecond bounds from the query JSON", func(t *testing.T) {
+		from := time.Unix(1_700_000_000, 0).UTC()
+		to := from.Add(time.Hour)
+		startNs := from.Add(123 * time.Nanosecond).UnixNano()
+		endNs := to.Add(456 * time.Nanosecond).UnixNano()
+		queryContext := &backend.QueryDataRequest{
+			Queries: []backend.DataQuery{
+				{
+					JSON: []byte(`{"expr": "{app=\"test\"}", "refId": "A", "startNs": "` + strconv.FormatInt(startNs, 10) + `", "endNs": "` + strconv.FormatInt(endNs, 10) + `"}`),
+					TimeRange: backend.TimeRange{
+						From: from,
+						To:   to,
+					},
+					Interval: time.Second,
+				},
+			},
+		}
+		models, err := parseQuery(queryContext, false)
+		require.NoError(t, err)
+		require.Equal(t, startNs, models[0].Start.UnixNano())
+		require.Equal(t, endNs, models[0].End.UnixNano())
+	})
+
+	t.Run("overrides only the bound that is set", func(t *testing.T) {
+		from := time.Unix(1_700_000_000, 0).UTC()
+		to := from.Add(time.Hour)
+		endNs := to.Add(789 * time.Nanosecond).UnixNano()
+		queryContext := &backend.QueryDataRequest{
+			Queries: []backend.DataQuery{
+				{
+					JSON: []byte(`{"expr": "{app=\"test\"}", "refId": "A", "endNs": "` + strconv.FormatInt(endNs, 10) + `", "startNs": ""}`),
+					TimeRange: backend.TimeRange{
+						From: from,
+						To:   to,
+					},
+					Interval: time.Second,
+				},
+			},
+		}
+		models, err := parseQuery(queryContext, false)
+		require.NoError(t, err)
+		require.True(t, models[0].Start.Equal(from))
+		require.Equal(t, endNs, models[0].End.UnixNano())
+	})
+
+	t.Run("rejects a nanosecond bound that is not an integer", func(t *testing.T) {
+		queryContext := &backend.QueryDataRequest{
+			Queries: []backend.DataQuery{
+				{
+					JSON: []byte(`{"expr": "{app=\"test\"}", "refId": "A", "startNs": "2024-01-01T00:00:00.000000001Z"}`),
+					TimeRange: backend.TimeRange{
+						From: time.Unix(1_700_000_000, 0).UTC(),
+						To:   time.Unix(1_700_003_600, 0).UTC(),
+					},
+					Interval: time.Second,
+				},
+			},
+		}
+		_, err := parseQuery(queryContext, false)
+		require.Error(t, err)
 	})
 
 	t.Run("interpolate variables, range between 1s and 0.5s", func(t *testing.T) {
