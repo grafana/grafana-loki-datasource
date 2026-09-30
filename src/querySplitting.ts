@@ -214,7 +214,7 @@ function runSplitGroupedQueries(
 
     const group = requests[requestGroup];
     const range = group.partition[requestN - 1];
-    const targets = withChunkNanosecondBounds(
+    const targets = withNanosecondBounds(
       adjustTargetsFromResponseState(group.request.targets, mergedResponse),
       range,
       group.request.range
@@ -348,7 +348,7 @@ function querySupportsSplitting(query: LokiQuery) {
 
 // startNs and endNs refine the original range edges. Interior chunk edges are
 // exact milliseconds, so only the chunk that still uses that edge keeps the bound.
-function withChunkNanosecondBounds(targets: LokiQuery[], chunk: TimeRange, original: TimeRange): LokiQuery[] {
+function withNanosecondBounds(targets: LokiQuery[], chunk: TimeRange, original: TimeRange): LokiQuery[] {
   return targets.map((target) => {
     if (!target.startNs && !target.endNs) {
       return target;
