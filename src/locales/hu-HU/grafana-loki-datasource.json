@@ -1,0 +1,16 @@
+{
+  "logs": {
+    "fields": {
+      "type": {
+        "loki": {
+          "indexed-label_one": "Indexált címkék",
+          "indexed-label_other": "Indexált címkék",
+          "parsedl-label_one": "Elemzett mezők",
+          "parsedl-label_other": "Elemzett mezők",
+          "structured-metadata_one": "Strukturált metaadatok",
+          "structured-metadata_other": "Strukturált metaadatok"
+        }
+      }
+    }
+  }
+}

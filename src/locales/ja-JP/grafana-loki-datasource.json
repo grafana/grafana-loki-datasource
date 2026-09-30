@@ -1,0 +1,13 @@
+{
+  "logs": {
+    "fields": {
+      "type": {
+        "loki": {
+          "indexed-label_other": "インデックス付きラベル",
+          "parsedl-label_other": "解析済みフィールド",
+          "structured-metadata_other": "構造化メタデータ"
+        }
+      }
+    }
+  }
+}

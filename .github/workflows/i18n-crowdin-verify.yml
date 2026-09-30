@@ -1,0 +1,19 @@
+name: Verify i18n markup has been committed
+
+permissions:
+  contents: read
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ startsWith(github.ref, 'refs/pull/') }}
+
+jobs:
+  verify-i18n:
+    if: (github.event_name == 'pull_request' || (github.event_name == 'push' && github.repository == 'grafana/grafana-loki-datasource'))
+    uses: grafana/grafana-github-actions/.github/workflows/verify-i18n.yml@main
