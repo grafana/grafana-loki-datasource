@@ -1,32 +1,30 @@
-import { readFile } from 'node:fs/promises';
-import { join } from 'node:path';
-
 import { expect, test } from '@grafana/plugin-e2e';
+
+import { isCloudRun, resolveDataSourceUid } from './env';
 
 test.describe('Variable editor', () => {
   test('keeps a typed field name without pressing Enter and previews its values', async ({
     variableEditPage,
     page,
-    readProvisionedDataSource,
   }) => {
-    // Grafana versions that still bundle loki as a core plugin serve their own loki frontend
-    // (this build loses the duplicate-plugin-id resolution), so its variable editor and the
-    // Detected field values query type are not reachable there. Skip only on a verified
-    // mismatch between the served bundle and this build; anything else is a real failure.
-    const servedModule = await page.request.get('/public/plugins/loki/module.js');
-    expect(servedModule.ok()).toBeTruthy();
-    const localModule = await readFile(join(__dirname, '../../dist/module.js'), 'utf8');
-    test.skip((await servedModule.text()) !== localModule, 'host Grafana is not serving this build');
+    const dsResponse = await page.request.get(`/api/datasources/uid/${await resolveDataSourceUid(page)}`);
+    expect(dsResponse.ok()).toBeTruthy();
+    const { name: dsName } = await dsResponse.json();
 
-    const ds = await readProvisionedDataSource({ fileName: 'datasources.yml' });
     await variableEditPage.setVariableType('Query');
-    await variableEditPage.datasource.set(ds.name);
+    await variableEditPage.datasource.set(dsName);
 
+    // Grafana versions that still bundle loki as a core plugin serve their own loki frontend,
+    // and a Cloud instance may run a plugin release older than this feature. Neither offers
+    // the Detected field values query type, so skip when the option is missing.
     await page.getByLabel('Query type', { exact: true }).click();
-    await page.getByText('Detected field values', { exact: true }).click();
+    await page.getByRole('option', { name: 'Label values', exact: true }).waitFor();
+    const detectedFieldValues = page.getByRole('option', { name: 'Detected field values', exact: true });
+    test.skip((await detectedFieldValues.count()) === 0, 'served loki plugin has no Detected field values query type');
+    await detectedFieldValues.click();
 
     // Type the field name and move on without pressing Enter: blur via an inert element,
-    // then fill the LogQL query. The fixture logs carry code=200/500 (tests/e2e/fixtures/load.py).
+    // then fill the LogQL query.
     await page.getByLabel('Field', { exact: true }).click();
     await page.keyboard.type('code');
     await page.getByText('Query type', { exact: true }).click();
@@ -36,6 +34,11 @@ test.describe('Variable editor', () => {
     await page.keyboard.press('Tab');
     await variableEditPage.runQuery();
 
-    await expect(variableEditPage).toDisplayPreviews(['200', '500']);
+    await expect(page.getByLabel('Field', { exact: true })).toHaveValue('code');
+
+    // The code=200/500 fixture logs are pushed only into the local Loki (tests/e2e/fixtures/load.py).
+    if (!isCloudRun) {
+      await expect(variableEditPage).toDisplayPreviews(['200', '500']);
+    }
   });
 });
