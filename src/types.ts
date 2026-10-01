@@ -32,6 +32,19 @@ export interface LokiQuery extends LokiQueryFromSchema {
   // override it here
   queryType?: LokiQueryType;
   disabledOperations?: LokiDisabledOperation[];
+  /**
+   * Experimental. Query start as a Unix nanosecond timestamp, decimal string.
+   * When set, the backend uses it instead of the request time range start.
+   * @alpha
+   */
+  startNs?: string;
+  /**
+   * Experimental. Query end as a Unix nanosecond timestamp, decimal string.
+   * When set, the backend uses it instead of the request time range end.
+   * Instant queries send this value as the evaluation time.
+   * @alpha
+   */
+  endNs?: string;
 }
 
 export interface LokiOptions extends DataSourceJsonData {

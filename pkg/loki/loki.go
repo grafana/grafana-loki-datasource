@@ -99,6 +99,11 @@ type QueryJSONModel struct {
 	Direction           *string             `json:"direction,omitempty"`
 	SupportingQueryType *string             `json:"supportingQueryType"`
 	Scopes              []scope.ScopeFilter `json:"scopes"`
+	// StartNs and EndNs are optional Unix timestamps in nanoseconds, as decimal
+	// strings. When set they replace the corresponding request time-range bound.
+	// Absent or empty values keep the millisecond TimeRange.
+	StartNs *string `json:"startNs,omitempty"`
+	EndNs   *string `json:"endNs,omitempty"`
 }
 
 type ResponseOpts struct {
