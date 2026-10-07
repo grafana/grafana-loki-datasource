@@ -1,5 +1,9 @@
 # Changelog
 
+## 13.2.2
+
+- Fix security vulnerabilities (CVE-2026-102278, CVE-2026-102276, CVE-2026-102990) in `brace-expansion` and `basic-ftp`
+
 ## 13.2.1
 
 - Upgrade lezer-logql ([#198](https://github.com/grafana/grafana-loki-datasource/pull/198))
