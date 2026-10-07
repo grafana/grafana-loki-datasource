@@ -174,6 +174,22 @@ describe.each([false, true])('runSplitQuery(aligned = %s)', (lokiAlignedQuerySpl
     });
   });
 
+  test('Keeps nanosecond bounds on the chunks that use the original range edges', async () => {
+    const request = createRequest([
+      { expr: '{a="b"}', refId: 'A', startNs: '1675832400000000123', endNs: '1676008800000000456' },
+    ]);
+    await expect(runSplitQuery(datasource, request)).toEmitValuesWith(() => {
+      expect(datasource.runQuery).toHaveBeenCalledTimes(3);
+      const calls = jest.mocked(datasource.runQuery).mock.calls.map((call) => call[0].targets[0]);
+      const newest = calls.find((target) => target.endNs);
+      const oldest = calls.find((target) => target.startNs);
+      const middle = calls.find((target) => !target.startNs && !target.endNs);
+      expect(newest).toEqual(expect.objectContaining({ startNs: undefined, endNs: '1676008800000000456' }));
+      expect(oldest).toEqual(expect.objectContaining({ startNs: '1675832400000000123', endNs: undefined }));
+      expect(middle).toEqual(expect.objectContaining({ startNs: undefined, endNs: undefined }));
+    });
+  });
+
   test('Metric queries with maxLines of 0 will execute', async () => {
     const request = createRequest([{ expr: 'count_over_time({a="b"}[1m])', refId: 'A', maxLines: 0 }]);
     await expect(runSplitQuery(datasource, request)).toEmitValuesWith(() => {

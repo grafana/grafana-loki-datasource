@@ -167,6 +167,16 @@ export class LogContextProvider {
       maxLines: limit,
       direction: queryDirection,
       datasource: { uid: this.datasource.uid, type: this.datasource.type },
+      // startNs/endNs refine the millisecond range below to the row's exact
+      // nanosecond, so rows sharing its millisecond are neither re-fetched
+      // nor dropped. Forward: Loki's start is inclusive, so begin one
+      // nanosecond after the reference row. Backward: Loki's end is
+      // exclusive, so ending exactly at the reference row's own nanosecond
+      // already excludes it while keeping earlier rows in the same
+      // millisecond.
+      ...(queryDirection === LokiQueryDirection.Forward
+        ? { startNs: (BigInt(row.timeEpochNs) + BigInt(1)).toString() }
+        : { endNs: row.timeEpochNs }),
     };
 
     const fieldCache = new FieldCache(row.dataFrame);
@@ -180,9 +190,6 @@ export class LogContextProvider {
     const range =
       queryDirection === LokiQueryDirection.Forward
         ? {
-            // start param in Loki API is inclusive so we'll have to filter out the row that this request is based from
-            // and any other that were logged in the same ns but before the row. Right now these rows will be lost
-            // because the are before but came it he response that should return only rows after.
             from: timestamp,
             // convert to ns, we lose some precision here but it is not that important at the far points of the context
             to: toUtc(row.timeEpochMs + timeWindowMs),
