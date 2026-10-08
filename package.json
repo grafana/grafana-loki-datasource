@@ -1,6 +1,6 @@
 {
   "name": "loki",
-  "version": "13.2.1",
+  "version": "13.2.2",
   "scripts": {
     "build": "webpack -c ./.config/webpack/webpack.config.ts --env production",
     "dev": "webpack -w -c ./.config/webpack/webpack.config.ts --env development",
@@ -100,6 +100,9 @@
   },
   "packageManager": "npm@11.19.1",
   "overrides": {
-    "serialize-javascript": "7.1.0"
+    "serialize-javascript": "7.1.0",
+    "brace-expansion@1": "1.1.21",
+    "brace-expansion@5": "5.0.12",
+    "basic-ftp": "6.2.2"
   }
 }
