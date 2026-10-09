@@ -1,0 +1,16 @@
+{
+  "logs": {
+    "fields": {
+      "type": {
+        "loki": {
+          "indexed-label_one": "Etichette indicizzate",
+          "indexed-label_other": "Etichette indicizzate",
+          "parsedl-label_one": "Campi analizzati",
+          "parsedl-label_other": "Campi analizzati",
+          "structured-metadata_one": "Metadati strutturati",
+          "structured-metadata_other": "Metadati strutturati"
+        }
+      }
+    }
+  }
+}
