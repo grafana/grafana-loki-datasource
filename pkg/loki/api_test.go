@@ -3,13 +3,17 @@ package loki
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
+	"net/http/httptest"
 	"strings"
 	"testing"
 	"time"
 
 	"github.com/grafana/grafana-plugin-sdk-go/backend"
+	"github.com/grafana/grafana-plugin-sdk-go/backend/httpclient"
+	"github.com/grafana/grafana-plugin-sdk-go/backend/tracing"
 	"github.com/grafana/grafana-loki-datasource/pkg/loki/kinds/dataquery"
 	"github.com/stretchr/testify/require"
 )
@@ -447,4 +451,71 @@ func TestErrorSources(t *testing.T) {
 		// Status code of 0 gets mapped to InternalServerError (500)
 		require.Equal(t, 0, res.Status)
 	})
+}
+
+func TestDataQueryRequestErrorSource(t *testing.T) {
+	sdkClient, err := httpclient.New()
+	require.NoError(t, err)
+
+	closedServer := httptest.NewServer(http.NotFoundHandler())
+	closedServer.Close()
+
+	failingClient := &http.Client{Transport: httpclient.RoundTripperFunc(func(*http.Request) (*http.Response, error) {
+		return nil, errors.New("transport failure")
+	})}
+
+	tests := []struct {
+		name           string
+		client         *http.Client
+		url            string
+		wantErr        string
+		wantDownstream bool
+	}{
+		{
+			name:           "empty url",
+			client:         sdkClient,
+			url:            "",
+			wantErr:        `unsupported protocol scheme ""`,
+			wantDownstream: true,
+		},
+		{
+			name:           "host without scheme",
+			client:         sdkClient,
+			url:            "loki.example.com",
+			wantErr:        `unsupported protocol scheme ""`,
+			wantDownstream: true,
+		},
+		{
+			name:           "host and port without scheme",
+			client:         sdkClient,
+			url:            "localhost:3100",
+			wantErr:        `unsupported protocol scheme "localhost"`,
+			wantDownstream: true,
+		},
+		{
+			name:           "connection refused",
+			client:         sdkClient,
+			url:            closedServer.URL,
+			wantErr:        "connection refused",
+			wantDownstream: true,
+		},
+		{
+			name:           "other transport error",
+			client:         failingClient,
+			url:            "http://localhost:3100",
+			wantErr:        "transport failure",
+			wantDownstream: false,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			api := newLokiAPI(tc.client, tc.url, backend.NewLoggerWith("logger", "test"), tracing.DefaultTracer())
+
+			res, err := api.DataQuery(context.Background(), lokiQuery{QueryType: QueryTypeRange}, ResponseOpts{})
+			require.NoError(t, err)
+			require.ErrorContains(t, res.Error, tc.wantErr)
+			require.Equal(t, tc.wantDownstream, res.ErrorSource == backend.ErrorSourceDownstream, "error source %q", res.ErrorSource)
+		})
+	}
 }
