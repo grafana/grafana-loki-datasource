@@ -299,6 +299,15 @@ func getFrameLabels(frame *data.Frame) map[string]string {
 	return labels
 }
 
+// Summary statistic display names are shared by parsing and split-query aggregation.
+const (
+	statSummaryBytesProcessedPerSecond = "Summary: bytes processed per second"
+	statSummaryLinesProcessedPerSecond = "Summary: lines processed per second"
+	statSummaryTotalBytesProcessed     = "Summary: total bytes processed"
+	statSummaryTotalLinesProcessed     = "Summary: total lines processed"
+	statSummaryExecTime                = "Summary: exec time"
+)
+
 func parseStats(frameMetaCustom interface{}) []data.QueryStat {
 	customMap, ok := frameMetaCustom.(map[string]interface{})
 	if !ok {
@@ -314,11 +323,11 @@ func parseStats(frameMetaCustom interface{}) []data.QueryStat {
 	summary, ok := rawStats["summary"].(map[string]interface{})
 	if ok {
 		stats = append(stats,
-			makeStat("Summary: bytes processed per second", summary["bytesProcessedPerSecond"], "Bps"),
-			makeStat("Summary: lines processed per second", summary["linesProcessedPerSecond"], ""),
-			makeStat("Summary: total bytes processed", summary["totalBytesProcessed"], "decbytes"),
-			makeStat("Summary: total lines processed", summary["totalLinesProcessed"], ""),
-			makeStat("Summary: exec time", summary["execTime"], "s"))
+			makeStat(statSummaryBytesProcessedPerSecond, summary["bytesProcessedPerSecond"], "Bps"),
+			makeStat(statSummaryLinesProcessedPerSecond, summary["linesProcessedPerSecond"], ""),
+			makeStat(statSummaryTotalBytesProcessed, summary["totalBytesProcessed"], "decbytes"),
+			makeStat(statSummaryTotalLinesProcessed, summary["totalLinesProcessed"], ""),
+			makeStat(statSummaryExecTime, summary["execTime"], "s"))
 	}
 
 	store, ok := rawStats["store"].(map[string]interface{})

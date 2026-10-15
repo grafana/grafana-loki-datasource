@@ -15,7 +15,7 @@ import {
 } from '@grafana/data';
 import { config } from '@grafana/runtime';
 
-import { LokiQueryType, LokiQueryDirection } from './dataquery';
+import { LokiQueryType, LokiQueryDirection, SupportingQueryType } from './dataquery';
 import { type LokiDatasource } from './datasource';
 import {
   splitTimeRange as splitLogsTimeRange,
@@ -60,6 +60,27 @@ export function partitionTimeRange(
       to,
       raw: { from, to },
     };
+  });
+}
+
+// Histogram bounds describe coverage, rather than inclusive evaluation timestamps.
+// Share aligned boundaries between chunks so only the original edges can require
+// partial buckets, and no full bucket is lost between daily requests.
+function partitionLogsVolumeTimeRange(range: TimeRange, stepMs: number, duration: number): TimeRange[] {
+  stepMs = Math.trunc(stepMs);
+  const chunks = partitionTimeRange(false, range, stepMs, duration);
+  const boundaries = [range.from.valueOf()];
+  for (const chunk of chunks.slice(1)) {
+    const boundary = Math.trunc(chunk.from.valueOf() / stepMs) * stepMs;
+    if (boundary > boundaries[boundaries.length - 1] && boundary < range.to.valueOf()) {
+      boundaries.push(boundary);
+    }
+  }
+  boundaries.push(range.to.valueOf());
+  return boundaries.slice(1).map((end, i) => {
+    const from = dateTime(boundaries[i]);
+    const to = dateTime(end);
+    return { from, to, raw: { from, to } };
   });
 }
 
@@ -408,10 +429,27 @@ export function runSplitQuery(
       const { maxLines, ...query } = q;
       return query;
     });
-    requests.push({
-      request: { ...request, targets },
-      partition: partitionTimeRange(false, request.range, Number(stepMs), oneDayMs),
-    });
+    const [volumeTargets, otherTargets] = partition(
+      targets,
+      (query) => query.supportingQueryType === SupportingQueryType.LogsVolume
+    );
+    if (volumeTargets.length) {
+      requests.push({
+        request: {
+          ...request,
+          // Keep every chunk on the same grid, including when the full range
+          // requires a larger safe step than an individual day would require.
+          targets: volumeTargets.map((query) => ({ ...query, step: `${Math.trunc(Number(stepMs))}ms`, resolution: 1 })),
+        },
+        partition: partitionLogsVolumeTimeRange(request.range, Number(stepMs), oneDayMs),
+      });
+    }
+    if (otherTargets.length) {
+      requests.push({
+        request: { ...request, targets: otherTargets },
+        partition: partitionTimeRange(false, request.range, Number(stepMs), oneDayMs),
+      });
+    }
   }
 
   if (nonSplittingQueries.length) {

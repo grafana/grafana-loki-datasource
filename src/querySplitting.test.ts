@@ -9,7 +9,7 @@ import {
 } from '@grafana/data';
 import { config } from '@grafana/runtime';
 
-import { LokiQueryType, LokiQueryDirection } from './dataquery';
+import { LokiQueryType, LokiQueryDirection, SupportingQueryType } from './dataquery';
 import { type LokiDatasource } from './datasource';
 import { createLokiDatasource } from './mocks/datasource';
 import { getMockFrames } from './mocks/frames';
@@ -22,7 +22,8 @@ jest.mock('./tracking');
 
 const originalShardingFlagState = config.featureToggles.lokiShardSplitting;
 const originalLokiQueryLimitsContextState = config.featureToggles.lokiQueryLimitsContext;
-const originalLokiAlignedQuerySplitting = (config.featureToggles as Record<string, boolean | undefined>).lokiAlignedQuerySplitting;
+const originalLokiAlignedQuerySplitting = (config.featureToggles as Record<string, boolean | undefined>)
+  .lokiAlignedQuerySplitting;
 const originalErr = console.error;
 beforeEach(() => {
   jest.spyOn(console, 'error').mockImplementation(() => {});
@@ -39,7 +40,8 @@ afterAll(() => {
   jest.mocked(global.setTimeout).mockReset();
   config.featureToggles.lokiShardSplitting = originalShardingFlagState;
   config.featureToggles.lokiQueryLimitsContext = originalLokiQueryLimitsContextState;
-  (config.featureToggles as Record<string, boolean | undefined>).lokiAlignedQuerySplitting = originalLokiAlignedQuerySplitting;
+  (config.featureToggles as Record<string, boolean | undefined>).lokiAlignedQuerySplitting =
+    originalLokiAlignedQuerySplitting;
   console.error = originalErr;
 });
 
@@ -66,7 +68,8 @@ describe.each([false, true])('runSplitQuery(aligned = %s)', (lokiAlignedQuerySpl
   };
   let globalRequest = createRequest([{ expr: 'count_over_time({a="b"}[1m])', refId: 'A' }]);
   beforeEach(() => {
-    (config.featureToggles as Record<string, boolean | undefined>).lokiAlignedQuerySplitting = lokiAlignedQuerySplitting;
+    (config.featureToggles as Record<string, boolean | undefined>).lokiAlignedQuerySplitting =
+      lokiAlignedQuerySplitting;
     globalRequest = createRequest([{ expr: 'count_over_time({a="b"}[1m])', refId: 'A' }]);
     datasource = createLokiDatasource();
     jest.spyOn(datasource, 'runQuery').mockReturnValue(of({ data: [] }));
@@ -78,6 +81,46 @@ describe.each([false, true])('runSplitQuery(aligned = %s)', (lokiAlignedQuerySpl
       expect(datasource.runQuery).toHaveBeenCalledTimes(3);
       // 3 sub-requests + complete
       expect(emitted).toHaveLength(4);
+    });
+  });
+
+  test.each([
+    { step: '1m', expectedSplits: 4 },
+    { step: '7m', expectedSplits: 4 },
+    { step: '1h', expectedSplits: 4 },
+    { step: '12h', expectedSplits: 4 },
+    { step: '24h', expectedSplits: 4 },
+    { step: '48h', expectedSplits: 1 },
+    { step: undefined, expectedSplits: 4 },
+  ])('keeps multi-day histogram coverage contiguous with step $step', async ({ step, expectedSplits }) => {
+    const from = dateTime('2023-02-08T05:00:30.000Z');
+    const to = dateTime('2023-02-11T06:00:30.000Z');
+    const request = createRequest(
+      [
+        {
+          expr: 'count_over_time({a="b"}[1m])',
+          refId: 'volume',
+          supportingQueryType: SupportingQueryType.LogsVolume,
+          step,
+        },
+      ],
+      { range: { from, to, raw: { from, to } } }
+    );
+    await expect(runSplitQuery(datasource, request)).toEmitValuesWith(() => {
+      const calls = jest
+        .mocked(datasource.runQuery)
+        .mock.calls.map(([request]) => request)
+        .sort((a, b) => a.range.from.valueOf() - b.range.from.valueOf());
+      expect(calls).toHaveLength(expectedSplits);
+      expect(calls[0].range.from.valueOf()).toBe(from.valueOf());
+      expect(calls[calls.length - 1].range.to.valueOf()).toBe(to.valueOf());
+      const expectedStep = calls[0].targets[0].step;
+      const expectedStepMs = Number(expectedStep?.replace('ms', ''));
+      for (let i = 1; i < calls.length; i++) {
+        expect(calls[i].range.from.valueOf()).toBe(calls[i - 1].range.to.valueOf());
+        expect(calls[i].range.from.valueOf() % expectedStepMs).toBe(0);
+        expect(calls[i].targets[0].step).toBe(expectedStep);
+      }
     });
   });
 
