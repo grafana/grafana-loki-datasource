@@ -286,3 +286,66 @@ func TestAdjustFrame(t *testing.T) {
 		}
 	})
 }
+
+func TestParseLogline(t *testing.T) {
+	custom := func(logline map[string]interface{}) map[string]interface{} {
+		return map[string]interface{}{"stats": map[string]interface{}{"logline": logline}}
+	}
+
+	t.Run("data skipped", func(t *testing.T) {
+		c := custom(map[string]interface{}{
+			"outcome":          "data_skipped",
+			"hintStatus":       "ok",
+			"hintLookupTime":   412000000.0,
+			"hintRanges":       18.0,
+			"skippedRequests":  20.0,
+			"narrowedRequests": 4.0,
+			"plannedChunks":    120000.0,
+			"scannedChunks":    4800.0,
+			"chunkFilterRatio": 0.96,
+			"objectRequests":   37.0,
+			"ioBytes":          9437184.0,
+			"ioWait":           210000000.0,
+			"hintWaitTime":     0.0,
+		})
+
+		byName := map[string]float64{}
+		units := map[string]string{}
+		for _, s := range parseStats(c) {
+			byName[s.DisplayName] = s.Value
+			units[s.DisplayName] = s.Unit
+		}
+		require.InDelta(t, 96.0, byName["Logline: chunk filter ratio"], 1e-9)
+		require.Equal(t, "percent", units["Logline: chunk filter ratio"])
+		require.Equal(t, 120000.0, byName["Logline: planned chunks"])
+		require.Equal(t, 4800.0, byName["Logline: scanned chunks"])
+		require.InDelta(t, 0.412, byName["Logline: hint lookup time"], 1e-9)
+		require.Equal(t, "s", units["Logline: hint lookup time"])
+		require.InDelta(t, 0.21, byName["Logline: io wait"], 1e-9)
+		require.Equal(t, 37.0, byName["Logline: object requests"])
+		require.Equal(t, "decbytes", units["Logline: io bytes"])
+
+		notice := parseLoglineNotice(c)
+		require.NotNil(t, notice)
+		require.Equal(t, data.NoticeSeverityInfo, notice.Severity)
+		require.Equal(t, "Full-text index: 96% of data skipped", notice.Text)
+	})
+
+	t.Run("not used", func(t *testing.T) {
+		notice := parseLoglineNotice(custom(map[string]interface{}{"outcome": "unsupported_query"}))
+		require.NotNil(t, notice)
+		require.Contains(t, notice.Text, "no line filter")
+	})
+
+	t.Run("key absent", func(t *testing.T) {
+		c := map[string]interface{}{"stats": map[string]interface{}{"summary": map[string]interface{}{}}}
+		require.Nil(t, parseLoglineNotice(c))
+		for _, s := range parseStats(c) {
+			require.NotContains(t, s.DisplayName, "Logline")
+		}
+	})
+
+	t.Run("unknown outcome has no notice", func(t *testing.T) {
+		require.Nil(t, parseLoglineNotice(custom(map[string]interface{}{"outcome": "something_new"})))
+	})
+}

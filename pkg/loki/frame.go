@@ -50,6 +50,9 @@ func adjustMetricFrame(frame *data.Frame, query *lokiQuery, setFrameName bool) e
 	}
 
 	frame.Meta.Stats = parseStats(frame.Meta.Custom)
+	if notice := parseLoglineNotice(frame.Meta.Custom); notice != nil {
+		frame.Meta.Notices = append(frame.Meta.Notices, *notice)
+	}
 	frame.Meta.Custom = nil
 
 	if isMetricRange {
@@ -127,6 +130,9 @@ func adjustLegacyLogsFrame(frame *data.Frame, query *lokiQuery) error {
 	}
 
 	frame.Meta.Stats = parseStats(frame.Meta.Custom)
+	if notice := parseLoglineNotice(frame.Meta.Custom); notice != nil {
+		frame.Meta.Notices = append(frame.Meta.Notices, *notice)
+	}
 	// TODO: when we get a real frame-type in grafana-plugin-sdk-go,
 	// move this to frame.Meta.FrameType
 	frame.Meta.Custom = map[string]string{
@@ -197,6 +203,9 @@ func adjustDataplaneLogsFrame(frame *data.Frame, query *lokiQuery) error {
 	}
 
 	frame.Meta.Stats = parseStats(frame.Meta.Custom)
+	if notice := parseLoglineNotice(frame.Meta.Custom); notice != nil {
+		frame.Meta.Notices = append(frame.Meta.Notices, *notice)
+	}
 	frame.Meta.Custom = nil
 	frame.Meta.Type = data.FrameTypeLogLines
 
@@ -350,7 +359,90 @@ func parseStats(frameMetaCustom interface{}) []data.QueryStat {
 			makeStat("Ingester: total duplicates", ingester["totalDuplicates"], ""))
 	}
 
+	if logline, ok := rawStats["logline"].(map[string]interface{}); ok {
+		stats = append(stats, parseLoglineStats(logline)...)
+	}
+
 	return stats
+}
+
+// parseLoglineStats converts the numeric fields of Loki's data.stats.logline
+// object. Loki reports durations in nanoseconds. The string fields (outcome,
+// hintStatus) can't be a QueryStat, see parseLoglineNotice.
+func parseLoglineStats(logline map[string]interface{}) []data.QueryStat {
+	return []data.QueryStat{
+		makeStat("Logline: chunk filter ratio", scaled(logline["chunkFilterRatio"], 100), "percent"),
+		makeStat("Logline: planned chunks", logline["plannedChunks"], ""),
+		makeStat("Logline: scanned chunks", logline["scannedChunks"], ""),
+		makeStat("Logline: skipped requests", logline["skippedRequests"], ""),
+		makeStat("Logline: narrowed requests", logline["narrowedRequests"], ""),
+		makeStat("Logline: hint ranges", logline["hintRanges"], ""),
+		makeStat("Logline: hint lookup time", scaled(logline["hintLookupTime"], 1e-9), "s"),
+		makeStat("Logline: hint wait time", scaled(logline["hintWaitTime"], 1e-9), "s"),
+		makeStat("Logline: object requests", logline["objectRequests"], ""),
+		makeStat("Logline: io bytes", logline["ioBytes"], "decbytes"),
+		makeStat("Logline: io wait", scaled(logline["ioWait"], 1e-9), "s"),
+	}
+}
+
+func scaled(v interface{}, factor float64) interface{} {
+	if f, ok := v.(float64); ok {
+		return f * factor
+	}
+	return v
+}
+
+// loglineNoticeText maps data.stats.logline.outcome, which the Loki query
+// frontend derives, to the text shown to the user.
+func loglineNoticeText(logline map[string]interface{}) string {
+	outcome, _ := logline["outcome"].(string)
+	switch outcome {
+	case "data_skipped", "tiny_data_skipped":
+		skipped, _ := logline["chunkFilterRatio"].(float64)
+		return fmt.Sprintf("Full-text index: %.0f%% of data skipped", skipped*100)
+	case "skip_ratio_unavailable":
+		return "Full-text index: skip ratio unavailable, for example because the results cache answered the query"
+	case "time_range_not_indexed":
+		return "Full-text index: the time range is not indexed"
+	case "recent_data_only":
+		return "Full-text index: not used, the query only covers recent data that is not indexed yet"
+	case "unsupported_query":
+		return "Full-text index: not used, the query has no line filter the index can use"
+	case "query_too_small":
+		return "Full-text index: not used, the query is too small to benefit"
+	case "size_estimate_failed":
+		return "Full-text index: not used, the query size could not be estimated"
+	case "lookup_failed":
+		return "Full-text index: not used, the index lookup failed"
+	case "lookup_timeout":
+		return "Full-text index: not used, the query finished before the index lookup did"
+	case "canceled":
+		return "Full-text index: not used, the index lookup was canceled"
+	default:
+		return ""
+	}
+}
+
+// parseLoglineNotice returns an info notice describing what the Logline index
+// did for the query, or nil if Loki did not report data.stats.logline.
+func parseLoglineNotice(frameMetaCustom interface{}) *data.Notice {
+	customMap, ok := frameMetaCustom.(map[string]interface{})
+	if !ok {
+		return nil
+	}
+	rawStats, ok := customMap["stats"].(map[string]interface{})
+	if !ok {
+		return nil
+	}
+	logline, ok := rawStats["logline"].(map[string]interface{})
+	if !ok {
+		return nil
+	}
+	text := loglineNoticeText(logline)
+	if text == "" {
+		return nil
+	}
+	return &data.Notice{Severity: data.NoticeSeverityInfo, Text: text}
 }
 
 func makeStat(name string, interfaceValue interface{}, unit string) data.QueryStat {
