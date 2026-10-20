@@ -314,8 +314,7 @@ function getCombinedMetadataStats(
     }
   }
 
-  // The chunk filter ratio is left out on purpose. Each split reports its own, and the ratio of the
-  // whole query can't be derived without recomputing it, so it is dropped once responses are merged.
+  // The chunk filter ratio is left out as it can't be derived without recomputing
   for (const name of FULL_TEXT_SUMMED_STATS) {
     const stat = sumStat(name, destStats, sourceStats);
     if (stat != null) {
