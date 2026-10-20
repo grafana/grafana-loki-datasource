@@ -206,7 +206,7 @@ function mergeFrames(dest: DataFrame, source: DataFrame) {
   dest.meta = {
     ...dest.meta,
     stats,
-    notices: getCombinedNotices(dest.meta?.notices ?? [], source.meta?.notices ?? [], stats),
+    notices: getCombinedNotices(dest.meta?.notices ?? [], source.meta?.notices ?? []),
   };
 }
 
@@ -275,10 +275,9 @@ const TOTAL_BYTES_STAT = 'Summary: total bytes processed';
 const EXEC_TIME_STAT = 'Summary: exec time';
 
 // These stats come from Loki's data.stats.logline, and the backend names them in parseStats.
-const FULL_TEXT_CHUNK_FILTER_RATIO_STAT = 'Full-Text Index: chunk filter ratio';
 const FULL_TEXT_PLANNED_CHUNKS_STAT = 'Full-Text Index: planned chunks';
 const FULL_TEXT_SCANNED_CHUNKS_STAT = 'Full-Text Index: scanned chunks';
-// Every Logline stat except the ratio can be summed across split requests.
+// The counts that can be summed across split requests.
 const FULL_TEXT_SUMMED_STATS = [
   FULL_TEXT_PLANNED_CHUNKS_STAT,
   FULL_TEXT_SCANNED_CHUNKS_STAT,
@@ -315,53 +314,35 @@ function getCombinedMetadataStats(
     }
   }
 
-  const loglineStats = FULL_TEXT_SUMMED_STATS.map((name) => sumStat(name, destStats, sourceStats)).filter(
-    (stat): stat is QueryResultMetaStat => stat != null
-  );
-  if (loglineStats.length > 0) {
-    // Each split reports its own ratio, and summing or averaging them is meaningless.
-    // Recompute it from the summed chunk counts instead.
-    const planned = loglineStats.find((s) => s.displayName === FULL_TEXT_PLANNED_CHUNKS_STAT)?.value ?? 0;
-    const scanned = loglineStats.find((s) => s.displayName === FULL_TEXT_SCANNED_CHUNKS_STAT)?.value ?? 0;
-    stats.push({
-      displayName: FULL_TEXT_CHUNK_FILTER_RATIO_STAT,
-      unit: 'percent',
-      value: planned > 0 ? (1 - scanned / planned) * 100 : 0,
-    });
-    stats.push(...loglineStats);
+  // The chunk filter ratio is left out on purpose. Each split reports its own, and the ratio of the
+  // whole query can't be derived without recomputing it, so it is dropped once responses are merged.
+  for (const name of FULL_TEXT_SUMMED_STATS) {
+    const stat = sumStat(name, destStats, sourceStats);
+    if (stat != null) {
+      stats.push(stat);
+    }
   }
   return stats;
 }
 
-// The notice the backend creates from a Logline outcome that reports a skip ratio.
+// The notice the backend creates from an outcome that reports a skip ratio. It only describes a single
+// response, so once responses are merged it is reworded without the percentage.
 const FULL_TEXT_SKIPPED_NOTICE = /^Full-Text Index: \d+% of data skipped$/;
+const FULL_TEXT_SKIPPED_MERGED_NOTICE = 'Full-Text Index: used, data was skipped';
 
 function getCombinedNotices(
   destNotices: QueryResultMetaNotice[],
-  sourceNotices: QueryResultMetaNotice[],
-  combinedStats: QueryResultMetaStat[] = []
+  sourceNotices: QueryResultMetaNotice[]
 ): QueryResultMetaNotice[] {
   // Combine notices from both frames and filter out null/undefined values
-  const allNotices = [...destNotices, ...sourceNotices].filter(
-    (notice): notice is QueryResultMetaNotice => notice != null
-  );
-
-  // Each split reports the percentage for its own chunks, so show one notice for the whole query,
-  // using the ratio recomputed from the combined stats.
-  const ratio = combinedStats.find((s) => s.displayName === FULL_TEXT_CHUNK_FILTER_RATIO_STAT)?.value;
-  const planned = combinedStats.find((s) => s.displayName === FULL_TEXT_PLANNED_CHUNKS_STAT)?.value ?? 0;
-  let skippedNoticeAdded = false;
+  const allNotices = [...destNotices, ...sourceNotices]
+    .filter((notice): notice is QueryResultMetaNotice => notice != null)
+    .map((notice) =>
+      FULL_TEXT_SKIPPED_NOTICE.test(notice.text) ? { ...notice, text: FULL_TEXT_SKIPPED_MERGED_NOTICE } : notice
+    );
 
   // Deduplicate notices based on text to avoid showing the same warning twice
   const uniqueNotices = allNotices.reduce((acc: QueryResultMetaNotice[], notice) => {
-    if (FULL_TEXT_SKIPPED_NOTICE.test(notice.text) && ratio !== undefined && planned > 0) {
-      if (!skippedNoticeAdded) {
-        skippedNoticeAdded = true;
-        acc.push({ ...notice, text: `Full-Text Index: ${Math.round(ratio)}% of data skipped` });
-      }
-      return acc;
-    }
-
     const exists = acc.some((n) => n.severity === notice.severity && n.text === notice.text);
     if (!exists) {
       acc.push(notice);

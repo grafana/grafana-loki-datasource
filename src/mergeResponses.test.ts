@@ -652,12 +652,12 @@ describe('combineResponses', () => {
     });
   });
 
-  describe('combine logline stats', () => {
+  describe('combine full-text index stats', () => {
     const { metricFrameA } = getMockFrames();
     const makeResponse = (stats?: QueryResultMetaStat[], notices?: QueryResultMetaNotice[]): DataQueryResponse => ({
       data: [{ ...metricFrameA, meta: { ...metricFrameA.meta, stats, notices } }],
     });
-    const logline = (planned: number, scanned: number, skippedRequests: number): QueryResultMetaStat[] => [
+    const fullText = (planned: number, scanned: number, skippedRequests: number): QueryResultMetaStat[] => [
       {
         displayName: 'Full-Text Index: chunk filter ratio',
         unit: 'percent',
@@ -666,65 +666,77 @@ describe('combineResponses', () => {
       { displayName: 'Full-Text Index: planned chunks', value: planned },
       { displayName: 'Full-Text Index: scanned chunks', value: scanned },
       { displayName: 'Full-Text Index: skipped requests', value: skippedRequests },
+      { displayName: 'Full-Text Index: narrowed requests', value: 1 },
     ];
     const find = (response: DataQueryResponse, name: string) =>
       response.data[0].meta.stats.find((s: QueryResultMetaStat) => s.displayName === name);
 
-    it('sums counts and recomputes the ratio from the sums', () => {
-      // 90% skipped over 100 chunks, 0% over 900 chunks: the average of the ratios would be 45%
-      const combined = combineResponses(makeResponse(logline(100, 10, 3)), makeResponse(logline(900, 900, 4)));
+    it('sums the counts', () => {
+      const combined = combineResponses(makeResponse(fullText(100, 10, 3)), makeResponse(fullText(900, 900, 4)));
 
       expect(find(combined, 'Full-Text Index: planned chunks')?.value).toBe(1000);
       expect(find(combined, 'Full-Text Index: scanned chunks')?.value).toBe(910);
       expect(find(combined, 'Full-Text Index: skipped requests')?.value).toBe(7);
-      expect(find(combined, 'Full-Text Index: chunk filter ratio')?.value).toBeCloseTo(9);
-      expect(find(combined, 'Full-Text Index: chunk filter ratio')?.unit).toBe('percent');
+      expect(find(combined, 'Full-Text Index: narrowed requests')?.value).toBe(2);
     });
 
-    it('keeps the stats when only one response has them', () => {
-      const combined = combineResponses(makeResponse(), makeResponse(logline(200, 100, 2)));
+    it('drops the chunk filter ratio instead of recomputing it', () => {
+      const combined = combineResponses(makeResponse(fullText(100, 10, 3)), makeResponse(fullText(900, 900, 4)));
+
+      expect(find(combined, 'Full-Text Index: chunk filter ratio')).toBeUndefined();
+    });
+
+    it('drops the chunk filter ratio when only one response has the stats', () => {
+      const combined = combineResponses(makeResponse(), makeResponse(fullText(200, 100, 2)));
 
       expect(find(combined, 'Full-Text Index: planned chunks')?.value).toBe(200);
-      expect(find(combined, 'Full-Text Index: chunk filter ratio')?.value).toBeCloseTo(50);
+      expect(find(combined, 'Full-Text Index: chunk filter ratio')).toBeUndefined();
     });
 
-    it('reports a zero ratio when nothing was planned', () => {
-      const combined = combineResponses(makeResponse(logline(0, 0, 0)), makeResponse(logline(0, 0, 0)));
-
-      expect(find(combined, 'Full-Text Index: chunk filter ratio')?.value).toBe(0);
-    });
-
-    it('adds no logline stats when none were reported', () => {
+    it('adds no full-text index stats when none were reported', () => {
       const combined = combineResponses(makeResponse(), makeResponse());
 
       expect(combined.data[0].meta.stats).toHaveLength(0);
     });
 
-    it('replaces the per-split skipped notices with one for the whole query', () => {
+    it('rewords the skipped percentage notice without the percentage', () => {
       const skipped = (pct: number): QueryResultMetaNotice[] => [
         { severity: 'info', text: `Full-Text Index: ${pct}% of data skipped` },
       ];
       const combined = combineResponses(
-        makeResponse(logline(100, 10, 3), skipped(90)),
-        makeResponse(logline(900, 900, 4), skipped(0))
+        makeResponse(fullText(100, 10, 3), skipped(90)),
+        makeResponse(fullText(900, 900, 4), skipped(30))
       );
 
       expect(combined.data[0].meta?.notices).toStrictEqual([
-        { severity: 'info', text: 'Full-Text Index: 9% of data skipped' },
+        { severity: 'info', text: 'Full-Text Index: used, data was skipped' },
       ]);
     });
 
-    it('keeps the other logline notices', () => {
+    it('rewords the skipped notice when only one response has it', () => {
       const combined = combineResponses(
-        makeResponse(logline(100, 50, 1), [{ severity: 'info', text: 'Full-Text Index: 50% of data skipped' }]),
-        makeResponse(undefined, [
-          { severity: 'info', text: 'Full-Text Index: not used, the query has no line filter the index can use' },
-        ])
+        makeResponse(fullText(100, 10, 3), [{ severity: 'info', text: 'Full-Text Index: 90% of data skipped' }]),
+        makeResponse(fullText(900, 900, 4))
       );
 
       expect(combined.data[0].meta?.notices).toStrictEqual([
-        { severity: 'info', text: 'Full-Text Index: 50% of data skipped' },
-        { severity: 'info', text: 'Full-Text Index: not used, the query has no line filter the index can use' },
+        { severity: 'info', text: 'Full-Text Index: used, data was skipped' },
+      ]);
+    });
+
+    it('keeps the other full-text index notices', () => {
+      const notUsed = {
+        severity: 'info' as const,
+        text: 'Full-Text Index: not used, the query only covers recent data that is not indexed yet',
+      };
+      const combined = combineResponses(
+        makeResponse(fullText(100, 50, 1), [{ severity: 'info', text: 'Full-Text Index: 50% of data skipped' }]),
+        makeResponse(undefined, [notUsed, notUsed])
+      );
+
+      expect(combined.data[0].meta?.notices).toStrictEqual([
+        { severity: 'info', text: 'Full-Text Index: used, data was skipped' },
+        notUsed,
       ]);
     });
   });
