@@ -1,6 +1,6 @@
 module github.com/grafana/grafana-loki-datasource
 
-go 1.26.7
+go 1.27.3
 
 ignore ./node_modules
 
