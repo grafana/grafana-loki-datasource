@@ -202,10 +202,11 @@ function mergeFrames(dest: DataFrame, source: DataFrame) {
 
   dest.length = dest.fields[0].values.length;
 
+  const stats = getCombinedMetadataStats(dest.meta?.stats ?? [], source.meta?.stats ?? []);
   dest.meta = {
     ...dest.meta,
-    stats: getCombinedMetadataStats(dest.meta?.stats ?? [], source.meta?.stats ?? []),
-    notices: getCombinedNotices(dest.meta?.notices ?? [], source.meta?.notices ?? []),
+    stats,
+    notices: getCombinedNotices(dest.meta?.notices ?? [], source.meta?.notices ?? [], stats),
   };
 }
 
@@ -272,42 +273,95 @@ function findSourceField(referenceField: Field, sourceFields: Field[], index: nu
 
 const TOTAL_BYTES_STAT = 'Summary: total bytes processed';
 const EXEC_TIME_STAT = 'Summary: exec time';
+
+// These stats come from Loki's data.stats.logline, and the backend names them in parseStats.
+const FULL_TEXT_CHUNK_FILTER_RATIO_STAT = 'Full-Text Index: chunk filter ratio';
+const FULL_TEXT_PLANNED_CHUNKS_STAT = 'Full-Text Index: planned chunks';
+const FULL_TEXT_SCANNED_CHUNKS_STAT = 'Full-Text Index: scanned chunks';
+// Every Logline stat except the ratio can be summed across split requests.
+const FULL_TEXT_SUMMED_STATS = [
+  FULL_TEXT_PLANNED_CHUNKS_STAT,
+  FULL_TEXT_SCANNED_CHUNKS_STAT,
+  'Full-Text Index: skipped requests',
+  'Full-Text Index: narrowed requests',
+];
+
+function sumStat(
+  name: string,
+  destStats: QueryResultMetaStat[],
+  sourceStats: QueryResultMetaStat[]
+): QueryResultMetaStat | undefined {
+  const destStat = destStats.find((s) => s.displayName === name);
+  const sourceStat = sourceStats.find((s) => s.displayName === name);
+
+  if (sourceStat != null && destStat != null) {
+    return { value: sourceStat.value + destStat.value, displayName: name, unit: destStat.unit };
+  }
+
+  // maybe one of them exist
+  return sourceStat ?? destStat;
+}
+
 // This is specific for Loki
 function getCombinedMetadataStats(
   destStats: QueryResultMetaStat[],
   sourceStats: QueryResultMetaStat[]
 ): QueryResultMetaStat[] {
-  // in the current approach, we only handle a single stat
   const stats: QueryResultMetaStat[] = [];
-  for (const stat of [TOTAL_BYTES_STAT, EXEC_TIME_STAT]) {
-    const destStat = destStats.find((s) => s.displayName === stat);
-    const sourceStat = sourceStats.find((s) => s.displayName === stat);
-
-    if (sourceStat != null && destStat != null) {
-      stats.push({ value: sourceStat.value + destStat.value, displayName: stat, unit: destStat.unit });
-      continue;
+  for (const name of [TOTAL_BYTES_STAT, EXEC_TIME_STAT]) {
+    const stat = sumStat(name, destStats, sourceStats);
+    if (stat != null) {
+      stats.push(stat);
     }
+  }
 
-    // maybe one of them exist
-    const eitherStat = sourceStat ?? destStat;
-    if (eitherStat != null) {
-      stats.push(eitherStat);
-    }
+  const loglineStats = FULL_TEXT_SUMMED_STATS.map((name) => sumStat(name, destStats, sourceStats)).filter(
+    (stat): stat is QueryResultMetaStat => stat != null
+  );
+  if (loglineStats.length > 0) {
+    // Each split reports its own ratio, and summing or averaging them is meaningless.
+    // Recompute it from the summed chunk counts instead.
+    const planned = loglineStats.find((s) => s.displayName === FULL_TEXT_PLANNED_CHUNKS_STAT)?.value ?? 0;
+    const scanned = loglineStats.find((s) => s.displayName === FULL_TEXT_SCANNED_CHUNKS_STAT)?.value ?? 0;
+    stats.push({
+      displayName: FULL_TEXT_CHUNK_FILTER_RATIO_STAT,
+      unit: 'percent',
+      value: planned > 0 ? (1 - scanned / planned) * 100 : 0,
+    });
+    stats.push(...loglineStats);
   }
   return stats;
 }
 
+// The notice the backend creates from a Logline outcome that reports a skip ratio.
+const FULL_TEXT_SKIPPED_NOTICE = /^Full-Text Index: \d+% of data skipped$/;
+
 function getCombinedNotices(
   destNotices: QueryResultMetaNotice[],
-  sourceNotices: QueryResultMetaNotice[]
+  sourceNotices: QueryResultMetaNotice[],
+  combinedStats: QueryResultMetaStat[] = []
 ): QueryResultMetaNotice[] {
   // Combine notices from both frames and filter out null/undefined values
   const allNotices = [...destNotices, ...sourceNotices].filter(
     (notice): notice is QueryResultMetaNotice => notice != null
   );
 
+  // Each split reports the percentage for its own chunks, so show one notice for the whole query,
+  // using the ratio recomputed from the combined stats.
+  const ratio = combinedStats.find((s) => s.displayName === FULL_TEXT_CHUNK_FILTER_RATIO_STAT)?.value;
+  const planned = combinedStats.find((s) => s.displayName === FULL_TEXT_PLANNED_CHUNKS_STAT)?.value ?? 0;
+  let skippedNoticeAdded = false;
+
   // Deduplicate notices based on text to avoid showing the same warning twice
   const uniqueNotices = allNotices.reduce((acc: QueryResultMetaNotice[], notice) => {
+    if (FULL_TEXT_SKIPPED_NOTICE.test(notice.text) && ratio !== undefined && planned > 0) {
+      if (!skippedNoticeAdded) {
+        skippedNoticeAdded = true;
+        acc.push({ ...notice, text: `Full-Text Index: ${Math.round(ratio)}% of data skipped` });
+      }
+      return acc;
+    }
+
     const exists = acc.some((n) => n.severity === notice.severity && n.text === notice.text);
     if (!exists) {
       acc.push(notice);
