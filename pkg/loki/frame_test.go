@@ -339,9 +339,17 @@ func TestParseLogline(t *testing.T) {
 	})
 
 	t.Run("not used", func(t *testing.T) {
-		notice := parseLoglineNotice(custom(map[string]interface{}{"outcome": "unsupported_query"}))
+		notice := parseLoglineNotice(custom(map[string]interface{}{"outcome": "recent_data_only"}))
 		require.NotNil(t, notice)
-		require.Contains(t, notice.Text, "no line filter")
+		require.Equal(t, data.NoticeSeverityInfo, notice.Severity)
+		require.Contains(t, notice.Text, "only covers recent data")
+	})
+
+	t.Run("outcomes without a notice", func(t *testing.T) {
+		// these say nothing useful to the user, so no notice is created
+		for _, outcome := range []string{"unsupported_query", "query_too_small"} {
+			require.Nil(t, parseLoglineNotice(custom(map[string]interface{}{"outcome": outcome})), outcome)
+		}
 	})
 
 	t.Run("key absent", func(t *testing.T) {

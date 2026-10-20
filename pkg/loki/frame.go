@@ -401,9 +401,11 @@ func loglineNoticeText(logline map[string]interface{}) string {
 	case "recent_data_only":
 		return "Full-Text Index: not used, the query only covers recent data that is not indexed yet"
 	case "unsupported_query":
-		return "Full-Text Index: not used, the query has no line filter the index can use"
+		// ommited as it doesn't add any useful information
+		return ""
 	case "query_too_small":
-		return "Full-Text Index: not used, the query is too small to benefit"
+		// ommited as it doesn't add any useful information
+		return ""
 	case "size_estimate_failed":
 		return "Full-Text Index: not used, the query size could not be estimated"
 	case "lookup_failed":
