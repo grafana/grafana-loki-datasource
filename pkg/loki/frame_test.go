@@ -3,6 +3,7 @@ package loki
 import (
 	"encoding/json"
 	"strconv"
+	"strings"
 	"testing"
 	"time"
 
@@ -315,20 +316,26 @@ func TestParseLogline(t *testing.T) {
 			byName[s.DisplayName] = s.Value
 			units[s.DisplayName] = s.Unit
 		}
-		require.InDelta(t, 96.0, byName["Logline: chunk filter ratio"], 1e-9)
-		require.Equal(t, "percent", units["Logline: chunk filter ratio"])
-		require.Equal(t, 120000.0, byName["Logline: planned chunks"])
-		require.Equal(t, 4800.0, byName["Logline: scanned chunks"])
-		require.InDelta(t, 0.412, byName["Logline: hint lookup time"], 1e-9)
-		require.Equal(t, "s", units["Logline: hint lookup time"])
-		require.InDelta(t, 0.21, byName["Logline: io wait"], 1e-9)
-		require.Equal(t, 37.0, byName["Logline: object requests"])
-		require.Equal(t, "decbytes", units["Logline: io bytes"])
+		require.InDelta(t, 96.0, byName["Full-Text Index: chunk filter ratio"], 1e-9)
+		require.Equal(t, "percent", units["Full-Text Index: chunk filter ratio"])
+		require.Equal(t, 120000.0, byName["Full-Text Index: planned chunks"])
+		require.Equal(t, 4800.0, byName["Full-Text Index: scanned chunks"])
+		require.Equal(t, 20.0, byName["Full-Text Index: skipped requests"])
+		require.Equal(t, 4.0, byName["Full-Text Index: narrowed requests"])
+
+		// only the five stats above are exposed, the other fields in the response are ignored
+		var loglineStats int
+		for _, s := range parseStats(c) {
+			if strings.HasPrefix(s.DisplayName, "Full-Text Index: ") {
+				loglineStats++
+			}
+		}
+		require.Equal(t, 5, loglineStats)
 
 		notice := parseLoglineNotice(c)
 		require.NotNil(t, notice)
 		require.Equal(t, data.NoticeSeverityInfo, notice.Severity)
-		require.Equal(t, "Full-text index: 96% of data skipped", notice.Text)
+		require.Equal(t, "Full-Text Index: 96% of data skipped", notice.Text)
 	})
 
 	t.Run("not used", func(t *testing.T) {
@@ -341,7 +348,7 @@ func TestParseLogline(t *testing.T) {
 		c := map[string]interface{}{"stats": map[string]interface{}{"summary": map[string]interface{}{}}}
 		require.Nil(t, parseLoglineNotice(c))
 		for _, s := range parseStats(c) {
-			require.NotContains(t, s.DisplayName, "Logline")
+			require.NotContains(t, s.DisplayName, "Full-Text Index")
 		}
 	})
 

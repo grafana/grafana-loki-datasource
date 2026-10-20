@@ -371,17 +371,11 @@ func parseStats(frameMetaCustom interface{}) []data.QueryStat {
 // hintStatus) can't be a QueryStat, see parseLoglineNotice.
 func parseLoglineStats(logline map[string]interface{}) []data.QueryStat {
 	return []data.QueryStat{
-		makeStat("Logline: chunk filter ratio", scaled(logline["chunkFilterRatio"], 100), "percent"),
-		makeStat("Logline: planned chunks", logline["plannedChunks"], ""),
-		makeStat("Logline: scanned chunks", logline["scannedChunks"], ""),
-		makeStat("Logline: skipped requests", logline["skippedRequests"], ""),
-		makeStat("Logline: narrowed requests", logline["narrowedRequests"], ""),
-		makeStat("Logline: hint ranges", logline["hintRanges"], ""),
-		makeStat("Logline: hint lookup time", scaled(logline["hintLookupTime"], 1e-9), "s"),
-		makeStat("Logline: hint wait time", scaled(logline["hintWaitTime"], 1e-9), "s"),
-		makeStat("Logline: object requests", logline["objectRequests"], ""),
-		makeStat("Logline: io bytes", logline["ioBytes"], "decbytes"),
-		makeStat("Logline: io wait", scaled(logline["ioWait"], 1e-9), "s"),
+		makeStat("Full-Text Index: chunk filter ratio", scaled(logline["chunkFilterRatio"], 100), "percent"),
+		makeStat("Full-Text Index: planned chunks", logline["plannedChunks"], ""),
+		makeStat("Full-Text Index: scanned chunks", logline["scannedChunks"], ""),
+		makeStat("Full-Text Index: skipped requests", logline["skippedRequests"], ""),
+		makeStat("Full-Text Index: narrowed requests", logline["narrowedRequests"], ""),
 	}
 }
 
@@ -399,25 +393,25 @@ func loglineNoticeText(logline map[string]interface{}) string {
 	switch outcome {
 	case "data_skipped", "tiny_data_skipped":
 		skipped, _ := logline["chunkFilterRatio"].(float64)
-		return fmt.Sprintf("Full-text index: %.0f%% of data skipped", skipped*100)
+		return fmt.Sprintf("Full-Text Index: %.0f%% of data skipped", skipped*100)
 	case "skip_ratio_unavailable":
-		return "Full-text index: skip ratio unavailable, for example because the results cache answered the query"
+		return "Full-Text Index: skip ratio unavailable, for example because the results cache answered the query"
 	case "time_range_not_indexed":
-		return "Full-text index: the time range is not indexed"
+		return "Full-Text Index: the time range is not indexed"
 	case "recent_data_only":
-		return "Full-text index: not used, the query only covers recent data that is not indexed yet"
+		return "Full-Text Index: not used, the query only covers recent data that is not indexed yet"
 	case "unsupported_query":
-		return "Full-text index: not used, the query has no line filter the index can use"
+		return "Full-Text Index: not used, the query has no line filter the index can use"
 	case "query_too_small":
-		return "Full-text index: not used, the query is too small to benefit"
+		return "Full-Text Index: not used, the query is too small to benefit"
 	case "size_estimate_failed":
-		return "Full-text index: not used, the query size could not be estimated"
+		return "Full-Text Index: not used, the query size could not be estimated"
 	case "lookup_failed":
-		return "Full-text index: not used, the index lookup failed"
+		return "Full-Text Index: not used, the index lookup failed"
 	case "lookup_timeout":
-		return "Full-text index: not used, the query finished before the index lookup did"
+		return "Full-Text Index: not used, the query finished before the index lookup did"
 	case "canceled":
-		return "Full-text index: not used, the index lookup was canceled"
+		return "Full-Text Index: not used, the index lookup was canceled"
 	default:
 		return ""
 	}
