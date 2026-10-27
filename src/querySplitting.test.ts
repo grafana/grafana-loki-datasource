@@ -136,6 +136,33 @@ describe.each([false, true])('runSplitQuery(aligned = %s)', (lokiAlignedQuerySpl
           }
         });
       });
+
+      test('rounds the automatic step up to stay within the resolution limit', async () => {
+        const shortFrom = dateTime('2023-02-08T05:00:00.000Z');
+        const shortTo = dateTime(shortFrom.valueOf() + 100_005);
+        const request = createRequest([volumeTarget()], {
+          intervalMs: 1,
+          range: { from: shortFrom, to: shortTo, raw: { from: shortFrom, to: shortTo } },
+        });
+        await expect(runSplitQuery(datasource, request)).toEmitValuesWith(() => {
+          const calls = sortedCalls();
+          expect(calls).toHaveLength(1);
+          expect(calls[0].targets[0].step).toBe('10ms');
+        });
+      });
+
+      test('treats a unitless step as seconds', async () => {
+        const shortFrom = dateTime('2023-02-08T05:00:00.000Z');
+        const shortTo = dateTime('2023-02-08T06:00:00.000Z');
+        const request = createRequest([volumeTarget('30')], {
+          range: { from: shortFrom, to: shortTo, raw: { from: shortFrom, to: shortTo } },
+        });
+        await expect(runSplitQuery(datasource, request)).toEmitValuesWith(() => {
+          const calls = sortedCalls();
+          expect(calls).toHaveLength(1);
+          expect(calls[0].targets[0].step).toBe('30000ms');
+        });
+      });
     });
 
     test('splits logs volume queries like any other metric query when the toggle is off', async () => {

@@ -480,8 +480,11 @@ function calculateStep(intervalMs: number, range: TimeRange, resolution: number,
   if (step?.match(interval_regex)) {
     return rangeUtil.intervalToMs(step) * resolution;
   }
+  if (step?.match(/^\d+$/)) {
+    return Number(step) * 1000 * resolution;
+  }
 
   const newStep = intervalMs * resolution;
-  const safeStep = Math.round((range.to.valueOf() - range.from.valueOf()) / 11000);
-  return Math.max(newStep, safeStep);
+  const safeStep = (range.to.valueOf() - range.from.valueOf()) / 11000;
+  return Math.ceil(Math.max(newStep, safeStep));
 }
