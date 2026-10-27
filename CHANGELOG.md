@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- Fix: Restore POST queries through the Grafana data source proxy for instant queries, range queries, labels, label values, and series, with or without `/loki` in the data source URL. These routes require `datasources:query` permission; non-allowlisted writes remain blocked.
+
 ## 13.2.4
 
 - Logline: read and expose stats when available ([#210](https://github.com/grafana/grafana-loki-datasource/pull/210))
