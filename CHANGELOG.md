@@ -8,6 +8,7 @@
 
 ## 13.2.3
 
+- Chore: Update Go to 1.27.3 ([#211](https://github.com/grafana/grafana-loki-datasource/pull/211))
 - Chore: Pin golangci-lint to 2.15.0 in development dependencies and CI/CD pipelines
 
 ## 13.2.2
