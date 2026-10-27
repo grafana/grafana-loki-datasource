@@ -1,5 +1,11 @@
 # Changelog
 
+## 13.2.4
+
+- Logline: read and expose stats when available ([#210](https://github.com/grafana/grafana-loki-datasource/pull/210))
+- Chore: Update node.js to v24.22.1 ([#194](https://github.com/grafana/grafana-loki-datasource/pull/194))
+- Chore: Dependency bump ([#216](https://github.com/grafana/grafana-loki-datasource/pull/216))
+
 ## 13.2.3
 
 - Chore: Pin golangci-lint to 2.15.0 in development dependencies and CI/CD pipelines
