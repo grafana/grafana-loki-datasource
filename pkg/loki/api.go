@@ -11,6 +11,7 @@ import (
 	"net/url"
 	"path"
 	"strconv"
+	"strings"
 	"time"
 
 	jsoniter "github.com/json-iterator/go"
@@ -190,7 +191,10 @@ func (api *LokiAPI) DataQuery(ctx context.Context, query lokiQuery, responseOpts
 			lp = append(lp, "statusCode", resp.StatusCode)
 		}
 		api.log.Debug("Error received from Loki", lp...)
-		if backend.IsDownstreamHTTPError(err) {
+		var urlErr *url.Error
+		// net/http reports an unsupported scheme, such as from an empty URL, only as an untyped error string.
+		unsupportedScheme := errors.As(err, &urlErr) && urlErr.Err != nil && strings.HasPrefix(urlErr.Err.Error(), "unsupported protocol scheme")
+		if backend.IsDownstreamHTTPError(err) || unsupportedScheme {
 			err = backend.DownstreamError(err)
 		}
 		res := backend.ErrorResponseWithErrorSource(err)
