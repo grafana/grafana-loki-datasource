@@ -1,5 +1,9 @@
 # Changelog
 
+## 13.2.5
+
+- Fix security vulnerabilities (CVE-2026-78669, CVE-2026-78660, CVE-2026-78659) in `golang.org/x/net`
+
 ## 13.2.4
 
 - Logline: read and expose stats when available ([#210](https://github.com/grafana/grafana-loki-datasource/pull/210))
