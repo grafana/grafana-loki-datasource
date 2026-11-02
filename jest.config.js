@@ -18,6 +18,8 @@ module.exports = {
       '@lezer/highlight',
       '@grafana/lezer-logql',
       '@marcbachmann/cel-js',
+      '@react-hookz/web',
+      '@ver0/deep-equal',
     ]),
   ],
 };

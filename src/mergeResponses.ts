@@ -202,9 +202,10 @@ function mergeFrames(dest: DataFrame, source: DataFrame) {
 
   dest.length = dest.fields[0].values.length;
 
+  const stats = getCombinedMetadataStats(dest.meta?.stats ?? [], source.meta?.stats ?? []);
   dest.meta = {
     ...dest.meta,
-    stats: getCombinedMetadataStats(dest.meta?.stats ?? [], source.meta?.stats ?? []),
+    stats,
     notices: getCombinedNotices(dest.meta?.notices ?? [], source.meta?.notices ?? []),
   };
 }
@@ -272,39 +273,72 @@ function findSourceField(referenceField: Field, sourceFields: Field[], index: nu
 
 const TOTAL_BYTES_STAT = 'Summary: total bytes processed';
 const EXEC_TIME_STAT = 'Summary: exec time';
+
+// These stats come from Loki's data.stats.logline, and the backend names them in parseStats.
+const FULL_TEXT_PLANNED_CHUNKS_STAT = 'Full-Text Index: planned chunks';
+const FULL_TEXT_SCANNED_CHUNKS_STAT = 'Full-Text Index: scanned chunks';
+// The counts that can be summed across split requests.
+const FULL_TEXT_SUMMED_STATS = [
+  FULL_TEXT_PLANNED_CHUNKS_STAT,
+  FULL_TEXT_SCANNED_CHUNKS_STAT,
+  'Full-Text Index: skipped requests',
+  'Full-Text Index: narrowed requests',
+];
+
+function sumStat(
+  name: string,
+  destStats: QueryResultMetaStat[],
+  sourceStats: QueryResultMetaStat[]
+): QueryResultMetaStat | undefined {
+  const destStat = destStats.find((s) => s.displayName === name);
+  const sourceStat = sourceStats.find((s) => s.displayName === name);
+
+  if (sourceStat != null && destStat != null) {
+    return { value: sourceStat.value + destStat.value, displayName: name, unit: destStat.unit };
+  }
+
+  // maybe one of them exist
+  return sourceStat ?? destStat;
+}
+
 // This is specific for Loki
 function getCombinedMetadataStats(
   destStats: QueryResultMetaStat[],
   sourceStats: QueryResultMetaStat[]
 ): QueryResultMetaStat[] {
-  // in the current approach, we only handle a single stat
   const stats: QueryResultMetaStat[] = [];
-  for (const stat of [TOTAL_BYTES_STAT, EXEC_TIME_STAT]) {
-    const destStat = destStats.find((s) => s.displayName === stat);
-    const sourceStat = sourceStats.find((s) => s.displayName === stat);
-
-    if (sourceStat != null && destStat != null) {
-      stats.push({ value: sourceStat.value + destStat.value, displayName: stat, unit: destStat.unit });
-      continue;
+  for (const name of [TOTAL_BYTES_STAT, EXEC_TIME_STAT]) {
+    const stat = sumStat(name, destStats, sourceStats);
+    if (stat != null) {
+      stats.push(stat);
     }
+  }
 
-    // maybe one of them exist
-    const eitherStat = sourceStat ?? destStat;
-    if (eitherStat != null) {
-      stats.push(eitherStat);
+  // The chunk filter ratio is left out as it can't be derived without recomputing
+  for (const name of FULL_TEXT_SUMMED_STATS) {
+    const stat = sumStat(name, destStats, sourceStats);
+    if (stat != null) {
+      stats.push(stat);
     }
   }
   return stats;
 }
+
+// The notice the backend creates from an outcome that reports a skip ratio. It only describes a single
+// response, so once responses are merged it is reworded without the percentage.
+const FULL_TEXT_SKIPPED_NOTICE = /^Full-Text Index: \d+% of data skipped$/;
+const FULL_TEXT_SKIPPED_MERGED_NOTICE = 'Full-Text Index: used, data was skipped';
 
 function getCombinedNotices(
   destNotices: QueryResultMetaNotice[],
   sourceNotices: QueryResultMetaNotice[]
 ): QueryResultMetaNotice[] {
   // Combine notices from both frames and filter out null/undefined values
-  const allNotices = [...destNotices, ...sourceNotices].filter(
-    (notice): notice is QueryResultMetaNotice => notice != null
-  );
+  const allNotices = [...destNotices, ...sourceNotices]
+    .filter((notice): notice is QueryResultMetaNotice => notice != null)
+    .map((notice) =>
+      FULL_TEXT_SKIPPED_NOTICE.test(notice.text) ? { ...notice, text: FULL_TEXT_SKIPPED_MERGED_NOTICE } : notice
+    );
 
   // Deduplicate notices based on text to avoid showing the same warning twice
   const uniqueNotices = allNotices.reduce((acc: QueryResultMetaNotice[], notice) => {
