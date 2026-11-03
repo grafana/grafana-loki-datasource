@@ -5,13 +5,37 @@ on:
     - cron: '0 6 * * *'
   workflow_dispatch:
 
+permissions:
+  contents: read
+  id-token: write
+
 jobs:
   playwright-cloud:
     uses: grafana/data-sources-ci-workflows/.github/workflows/playwright-cloud.yml@main
     secrets: inherit
+    permissions:
+      contents: read
+      id-token: write
     with:
+      run-stage: nightly
       repo-secrets: |
-        DS_INSTANCE_HOST=lokiEKS:json_host
-        DS_INSTANCE_PASSWORD=lokiEKS:secure_password
-        DS_INSTANCE_PORT=lokiEKS:json_port
-        DS_INSTANCE_USERNAME=lokiERKS:json_username
+        DS_INSTANCE_NAME=lokiEKS:name
+
+  notify-slack:
+    name: Notify Slack on failure
+    needs: playwright-cloud
+    if: failure()
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: Notify Slack on failure
+        uses: grafana/data-sources-ci-workflows/.github/actions/notify-cloud-e2e-failure@main
+        with:
+          repo: ${{ github.repository }}
+          run-stage: nightly
+          ref-name: ${{ github.ref_name }}
+          actor: ${{ github.actor }}
+          sha: ${{ github.sha }}
+          run-url: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}

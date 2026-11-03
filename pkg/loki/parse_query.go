@@ -133,8 +133,10 @@ func parseQuery(queryContext *backend.QueryDataRequest, logqlScopesEnabled bool)
 			return nil, err
 		}
 
-		start := query.TimeRange.From
-		end := query.TimeRange.To
+		start, end, err := resolveQueryBounds(model, query.TimeRange.From, query.TimeRange.To)
+		if err != nil {
+			return nil, err
+		}
 
 		var resolution int64 = 1
 		if model.Resolution != nil && (*model.Resolution >= 1 && *model.Resolution <= 5 || *model.Resolution == 10) {
@@ -142,7 +144,7 @@ func parseQuery(queryContext *backend.QueryDataRequest, logqlScopesEnabled bool)
 		}
 
 		interval := query.Interval
-		timeRange := query.TimeRange.To.Sub(query.TimeRange.From)
+		timeRange := end.Sub(start)
 
 		step, err := calculateStep(interval, timeRange, resolution, model.Step)
 		if err != nil {
@@ -199,6 +201,36 @@ func parseQuery(queryContext *backend.QueryDataRequest, logqlScopesEnabled bool)
 	}
 
 	return qs, nil
+}
+
+// resolveQueryBounds returns the query window. Optional startNs and endNs on the
+// query JSON replace the matching millisecond TimeRange bound. Missing or empty
+// values leave that bound unchanged.
+func resolveQueryBounds(model *QueryJSONModel, from, to time.Time) (time.Time, time.Time, error) {
+	start, err := boundOrDefault(model.StartNs, from)
+	if err != nil {
+		return time.Time{}, time.Time{}, err
+	}
+	end, err := boundOrDefault(model.EndNs, to)
+	if err != nil {
+		return time.Time{}, time.Time{}, err
+	}
+	return start, end, nil
+}
+
+func boundOrDefault(nanos *string, fallback time.Time) (time.Time, error) {
+	if nanos == nil || *nanos == "" {
+		return fallback, nil
+	}
+	return parseUnixNanos(*nanos)
+}
+
+func parseUnixNanos(value string) (time.Time, error) {
+	ns, err := strconv.ParseInt(value, 10, 64)
+	if err != nil {
+		return time.Time{}, backend.DownstreamError(fmt.Errorf("invalid nanosecond timestamp %q", value))
+	}
+	return time.Unix(0, ns).UTC(), nil
 }
 
 func generateLimitsConfig(model *QueryJSONModel, interval time.Duration, timeRange time.Duration, queryType QueryType, step time.Duration) LimitsContext {

@@ -132,7 +132,6 @@ func Test_healthcheck(t *testing.T) {
 
 func getPluginContext() backend.PluginContext {
 	return backend.PluginContext{
-		OrgID:               0,
 		PluginID:            "loki",
 		User:                nil,
 		AppInstanceSettings: nil,

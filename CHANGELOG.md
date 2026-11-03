@@ -1,5 +1,34 @@
 # Changelog
 
+## Unreleased
+
+- Fix a connection freeze between Grafana and the plugin under heavy query load by updating google.golang.org/grpc to v1.85.0 ([grpc/grpc-go#9330](https://github.com/grpc/grpc-go/issues/9330))
+
+## 13.2.5
+
+- Fix security vulnerabilities (CVE-2026-78669, CVE-2026-78660, CVE-2026-78659) in `golang.org/x/net`
+
+## 13.2.4
+
+- Logline: read and expose stats when available ([#210](https://github.com/grafana/grafana-loki-datasource/pull/210))
+- Chore: Update node.js to v24.22.1 ([#194](https://github.com/grafana/grafana-loki-datasource/pull/194))
+- Chore: Dependency bump ([#216](https://github.com/grafana/grafana-loki-datasource/pull/216))
+
+## 13.2.3
+
+- Chore: Update Go to 1.27.3 ([#211](https://github.com/grafana/grafana-loki-datasource/pull/211))
+- Chore: Pin golangci-lint to 2.15.0 in development dependencies and CI/CD pipelines
+
+## 13.2.2
+
+- Fix security vulnerabilities (CVE-2026-102278, CVE-2026-102276, CVE-2026-102990) in `brace-expansion` and `basic-ftp`
+
+## 13.2.1
+
+- Upgrade lezer-logql ([#198](https://github.com/grafana/grafana-loki-datasource/pull/198))
+- Loki: Tag Explore queries with their source ([#196](https://github.com/grafana/grafana-loki-datasource/pull/196))
+- Fix security vulnerabilities (CVE-2026-84375) ([#200](https://github.com/grafana/grafana-loki-datasource/pull/200))
+
 ## 13.2.0
 
 - Support detected field values in dashboard variables ([#177](https://github.com/grafana/grafana-loki-datasource/pull/177))
