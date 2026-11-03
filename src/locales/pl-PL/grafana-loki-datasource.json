@@ -1,0 +1,22 @@
+{
+  "logs": {
+    "fields": {
+      "type": {
+        "loki": {
+          "indexed-label_one": "Etykiety indeksowane",
+          "indexed-label_few": "Etykiety indeksowane",
+          "indexed-label_many": "Etykiety indeksowane",
+          "indexed-label_other": "Etykiety indeksowane",
+          "parsedl-label_one": "Pola przetworzone",
+          "parsedl-label_few": "Pola przetworzone",
+          "parsedl-label_many": "Pola przetworzone",
+          "parsedl-label_other": "Pola przetworzone",
+          "structured-metadata_one": "Ustrukturyzowane metadane",
+          "structured-metadata_few": "Ustrukturyzowane metadane",
+          "structured-metadata_many": "Ustrukturyzowane metadane",
+          "structured-metadata_other": "Ustrukturyzowane metadane"
+        }
+      }
+    }
+  }
+}

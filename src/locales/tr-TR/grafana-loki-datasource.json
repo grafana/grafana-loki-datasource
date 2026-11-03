@@ -1,0 +1,16 @@
+{
+  "logs": {
+    "fields": {
+      "type": {
+        "loki": {
+          "indexed-label_one": "Dizine eklenen etiketler",
+          "indexed-label_other": "Dizine eklenen etiketler",
+          "parsedl-label_one": "Ayrıştırılmış alanlar",
+          "parsedl-label_other": "Ayrıştırılmış alanlar",
+          "structured-metadata_one": "Yapılandırılmış meta veriler",
+          "structured-metadata_other": "Yapılandırılmış meta veriler"
+        }
+      }
+    }
+  }
+}

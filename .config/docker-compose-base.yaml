@@ -19,13 +19,13 @@ services:
     cap_add:
       - SYS_PTRACE
     volumes:
-      - ../dist:/var/lib/grafana/plugins/grafana-loki-datasource
+      - ../dist:/var/lib/grafana/plugins/loki
       - ../provisioning:/etc/grafana/provisioning
-      - ..:/root/grafana-loki-datasource
+      - ..:/root/loki
 
     environment:
       NODE_ENV: development
-      GF_LOG_FILTERS: plugin.grafana-loki-datasource:debug
+      GF_LOG_FILTERS: plugin.loki:debug
       GF_LOG_LEVEL: debug
       GF_DATAPROXY_LOGGING: 1
-      GF_PLUGINS_ALLOW_LOADING_UNSIGNED_PLUGINS: grafana-loki-datasource
+      GF_PLUGINS_ALLOW_LOADING_UNSIGNED_PLUGINS: loki

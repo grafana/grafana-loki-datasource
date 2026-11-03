@@ -1,0 +1,22 @@
+{
+  "logs": {
+    "fields": {
+      "type": {
+        "loki": {
+          "indexed-label_one": "Индексированные метки",
+          "indexed-label_few": "Индексированные метки",
+          "indexed-label_many": "Индексированные метки",
+          "indexed-label_other": "Индексированные метки",
+          "parsedl-label_one": "Поля с анализом",
+          "parsedl-label_few": "Поля с анализом",
+          "parsedl-label_many": "Поля с анализом",
+          "parsedl-label_other": "Поля с анализом",
+          "structured-metadata_one": "Структурированные метаданные",
+          "structured-metadata_few": "Структурированные метаданные",
+          "structured-metadata_many": "Структурированные метаданные",
+          "structured-metadata_other": "Структурированные метаданные"
+        }
+      }
+    }
+  }
+}

@@ -36,3 +36,16 @@ services:
     extends:
       file: .config/docker-compose-base.yaml
       service: grafana
+    configs:
+      # Run the externalized plugin in place of the core Loki plugin.
+      # Keep as_external=true in the config until CI no longer runs E2E tests for Grafana versions below 13.2.0.
+      # Without as_external=true, DuplicatePluginIDValidation (pkg/services/pluginsintegration/pipeline/steps.go)
+      # drops the external plugin because the core one is already registered under id=loki.
+      - source: grafana_custom_ini
+        target: /etc/grafana/grafana.ini
+
+configs:
+  grafana_custom_ini:
+    content: |
+      [plugin.loki]
+      as_external = true

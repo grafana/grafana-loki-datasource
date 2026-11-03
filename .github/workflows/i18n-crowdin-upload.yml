@@ -1,0 +1,34 @@
+name: Crowdin Upload Action
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'src/locales/en-US/grafana-loki-datasource.json'
+    branches:
+      - main
+
+jobs:
+  upload-sources-to-crowdin:
+    runs-on: ubuntu-x64
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
+        with:
+          persist-credentials: false
+      - name: 'Get vault secrets'
+        id: vault-secrets
+        uses: grafana/shared-workflows/actions/get-vault-secrets@main
+        with:
+          # Vault secret paths:
+          # - ci/repo/grafana/grafana-loki-datasource/grafana-frontend-crowdin-token
+          repo_secrets: |
+            CROWDIN_TOKEN=grafana-frontend-crowdin-token:access_token
+      - name: Upload to Crowdin
+        uses: grafana/grafana-github-actions/crowdin-upload@main
+        with:
+          crowdin_token: ${{ fromJSON(steps.vault-secrets.outputs.secrets).CROWDIN_TOKEN }}
+          crowdin_project_id: 62

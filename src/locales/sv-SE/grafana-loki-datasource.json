@@ -1,0 +1,16 @@
+{
+  "logs": {
+    "fields": {
+      "type": {
+        "loki": {
+          "indexed-label_one": "Indexerade etiketter",
+          "indexed-label_other": "Indexerade etiketter",
+          "parsedl-label_one": "Tolkade fält",
+          "parsedl-label_other": "Tolkade fält",
+          "structured-metadata_one": "Strukturerade metadata",
+          "structured-metadata_other": "Strukturerade metadata"
+        }
+      }
+    }
+  }
+}
