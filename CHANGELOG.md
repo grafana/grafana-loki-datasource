@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Fix SQL expressions, alert rules, and API calls getting only 100 log lines when the query has no line limit. They now use the data source's Maximum lines setting, default 1,000, as panels do.
 - Fix a connection freeze between Grafana and the plugin under heavy query load by updating google.golang.org/grpc to v1.85.0 ([grpc/grpc-go#9330](https://github.com/grpc/grpc-go/issues/9330))
 
 ## 13.2.5
