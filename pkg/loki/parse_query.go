@@ -125,7 +125,9 @@ func parseSupportingQueryType(jsonPointerValue *string) SupportingQueryType {
 	}
 }
 
-func parseQuery(queryContext *backend.QueryDataRequest, logqlScopesEnabled bool) ([]*lokiQuery, error) {
+// parseQuery builds the Loki queries for a request. A query without a positive
+// maxLines gets fallbackMaxLines. Without a limit, Loki returns only 100 lines.
+func parseQuery(queryContext *backend.QueryDataRequest, logqlScopesEnabled bool, fallbackMaxLines int) ([]*lokiQuery, error) {
 	qs := []*lokiQuery{}
 	for _, query := range queryContext.Queries {
 		model, err := parseQueryModel(query.JSON)
@@ -165,8 +167,8 @@ func parseQuery(queryContext *backend.QueryDataRequest, logqlScopesEnabled bool)
 			return nil, err
 		}
 
-		var maxLines int64
-		if model.MaxLines != nil {
+		maxLines := int64(fallbackMaxLines)
+		if model.MaxLines != nil && *model.MaxLines > 0 {
 			maxLines = *model.MaxLines
 		}
 
