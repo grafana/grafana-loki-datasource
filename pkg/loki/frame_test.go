@@ -3,6 +3,7 @@ package loki
 import (
 	"encoding/json"
 	"strconv"
+	"strings"
 	"testing"
 	"time"
 
@@ -284,5 +285,82 @@ func TestAdjustFrame(t *testing.T) {
 		for i := 0; i < len(result); i++ {
 			require.Equal(t, expected[i], result[i])
 		}
+	})
+}
+
+func TestParseLogline(t *testing.T) {
+	custom := func(logline map[string]interface{}) map[string]interface{} {
+		return map[string]interface{}{"stats": map[string]interface{}{"logline": logline}}
+	}
+
+	t.Run("data skipped", func(t *testing.T) {
+		c := custom(map[string]interface{}{
+			"outcome":          "data_skipped",
+			"hintStatus":       "ok",
+			"hintLookupTime":   412000000.0,
+			"hintRanges":       18.0,
+			"skippedRequests":  20.0,
+			"narrowedRequests": 4.0,
+			"plannedChunks":    120000.0,
+			"scannedChunks":    4800.0,
+			"chunkFilterRatio": 0.96,
+			"objectRequests":   37.0,
+			"ioBytes":          9437184.0,
+			"ioWait":           210000000.0,
+			"hintWaitTime":     0.0,
+		})
+
+		byName := map[string]float64{}
+		units := map[string]string{}
+		for _, s := range parseStats(c) {
+			byName[s.DisplayName] = s.Value
+			units[s.DisplayName] = s.Unit
+		}
+		require.InDelta(t, 96.0, byName["Full-Text Index: chunk filter ratio"], 1e-9)
+		require.Equal(t, "percent", units["Full-Text Index: chunk filter ratio"])
+		require.Equal(t, 120000.0, byName["Full-Text Index: planned chunks"])
+		require.Equal(t, 4800.0, byName["Full-Text Index: scanned chunks"])
+		require.Equal(t, 20.0, byName["Full-Text Index: skipped requests"])
+		require.Equal(t, 4.0, byName["Full-Text Index: narrowed requests"])
+
+		// only the five stats above are exposed, the other fields in the response are ignored
+		var loglineStats int
+		for _, s := range parseStats(c) {
+			if strings.HasPrefix(s.DisplayName, "Full-Text Index: ") {
+				loglineStats++
+			}
+		}
+		require.Equal(t, 5, loglineStats)
+
+		notice := parseLoglineNotice(c)
+		require.NotNil(t, notice)
+		require.Equal(t, data.NoticeSeverityInfo, notice.Severity)
+		require.Equal(t, "Full-Text Index: 96% of data skipped", notice.Text)
+	})
+
+	t.Run("not used", func(t *testing.T) {
+		notice := parseLoglineNotice(custom(map[string]interface{}{"outcome": "recent_data_only"}))
+		require.NotNil(t, notice)
+		require.Equal(t, data.NoticeSeverityInfo, notice.Severity)
+		require.Contains(t, notice.Text, "only covers recent data")
+	})
+
+	t.Run("outcomes without a notice", func(t *testing.T) {
+		// these say nothing useful to the user, so no notice is created
+		for _, outcome := range []string{"unsupported_query", "query_too_small"} {
+			require.Nil(t, parseLoglineNotice(custom(map[string]interface{}{"outcome": outcome})), outcome)
+		}
+	})
+
+	t.Run("key absent", func(t *testing.T) {
+		c := map[string]interface{}{"stats": map[string]interface{}{"summary": map[string]interface{}{}}}
+		require.Nil(t, parseLoglineNotice(c))
+		for _, s := range parseStats(c) {
+			require.NotContains(t, s.DisplayName, "Full-Text Index")
+		}
+	})
+
+	t.Run("unknown outcome has no notice", func(t *testing.T) {
+		require.Nil(t, parseLoglineNotice(custom(map[string]interface{}{"outcome": "something_new"})))
 	})
 }

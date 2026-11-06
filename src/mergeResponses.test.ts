@@ -652,6 +652,95 @@ describe('combineResponses', () => {
     });
   });
 
+  describe('combine full-text index stats', () => {
+    const { metricFrameA } = getMockFrames();
+    const makeResponse = (stats?: QueryResultMetaStat[], notices?: QueryResultMetaNotice[]): DataQueryResponse => ({
+      data: [{ ...metricFrameA, meta: { ...metricFrameA.meta, stats, notices } }],
+    });
+    const fullText = (planned: number, scanned: number, skippedRequests: number): QueryResultMetaStat[] => [
+      {
+        displayName: 'Full-Text Index: chunk filter ratio',
+        unit: 'percent',
+        value: planned > 0 ? (1 - scanned / planned) * 100 : 0,
+      },
+      { displayName: 'Full-Text Index: planned chunks', value: planned },
+      { displayName: 'Full-Text Index: scanned chunks', value: scanned },
+      { displayName: 'Full-Text Index: skipped requests', value: skippedRequests },
+      { displayName: 'Full-Text Index: narrowed requests', value: 1 },
+    ];
+    const find = (response: DataQueryResponse, name: string) =>
+      response.data[0].meta.stats.find((s: QueryResultMetaStat) => s.displayName === name);
+
+    it('sums the counts', () => {
+      const combined = combineResponses(makeResponse(fullText(100, 10, 3)), makeResponse(fullText(900, 900, 4)));
+
+      expect(find(combined, 'Full-Text Index: planned chunks')?.value).toBe(1000);
+      expect(find(combined, 'Full-Text Index: scanned chunks')?.value).toBe(910);
+      expect(find(combined, 'Full-Text Index: skipped requests')?.value).toBe(7);
+      expect(find(combined, 'Full-Text Index: narrowed requests')?.value).toBe(2);
+    });
+
+    it('drops the chunk filter ratio instead of recomputing it', () => {
+      const combined = combineResponses(makeResponse(fullText(100, 10, 3)), makeResponse(fullText(900, 900, 4)));
+
+      expect(find(combined, 'Full-Text Index: chunk filter ratio')).toBeUndefined();
+    });
+
+    it('drops the chunk filter ratio when only one response has the stats', () => {
+      const combined = combineResponses(makeResponse(), makeResponse(fullText(200, 100, 2)));
+
+      expect(find(combined, 'Full-Text Index: planned chunks')?.value).toBe(200);
+      expect(find(combined, 'Full-Text Index: chunk filter ratio')).toBeUndefined();
+    });
+
+    it('adds no full-text index stats when none were reported', () => {
+      const combined = combineResponses(makeResponse(), makeResponse());
+
+      expect(combined.data[0].meta.stats).toHaveLength(0);
+    });
+
+    it('rewords the skipped percentage notice without the percentage', () => {
+      const skipped = (pct: number): QueryResultMetaNotice[] => [
+        { severity: 'info', text: `Full-Text Index: ${pct}% of data skipped` },
+      ];
+      const combined = combineResponses(
+        makeResponse(fullText(100, 10, 3), skipped(90)),
+        makeResponse(fullText(900, 900, 4), skipped(30))
+      );
+
+      expect(combined.data[0].meta?.notices).toStrictEqual([
+        { severity: 'info', text: 'Full-Text Index: used, data was skipped' },
+      ]);
+    });
+
+    it('rewords the skipped notice when only one response has it', () => {
+      const combined = combineResponses(
+        makeResponse(fullText(100, 10, 3), [{ severity: 'info', text: 'Full-Text Index: 90% of data skipped' }]),
+        makeResponse(fullText(900, 900, 4))
+      );
+
+      expect(combined.data[0].meta?.notices).toStrictEqual([
+        { severity: 'info', text: 'Full-Text Index: used, data was skipped' },
+      ]);
+    });
+
+    it('keeps the other full-text index notices', () => {
+      const notUsed = {
+        severity: 'info' as const,
+        text: 'Full-Text Index: not used, the query only covers recent data that is not indexed yet',
+      };
+      const combined = combineResponses(
+        makeResponse(fullText(100, 50, 1), [{ severity: 'info', text: 'Full-Text Index: 50% of data skipped' }]),
+        makeResponse(undefined, [notUsed, notUsed])
+      );
+
+      expect(combined.data[0].meta?.notices).toStrictEqual([
+        { severity: 'info', text: 'Full-Text Index: used, data was skipped' },
+        notUsed,
+      ]);
+    });
+  });
+
   describe('combine notices', () => {
     const { metricFrameA } = getMockFrames();
     const makeResponse = (notices?: QueryResultMetaNotice[]): DataQueryResponse => ({

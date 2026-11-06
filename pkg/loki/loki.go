@@ -31,11 +31,12 @@ import (
 )
 
 const (
-	flagLokiLogsDataplane         = "lokiLogsDataplane"
-	flagLokiRunQueriesInParallel  = "lokiRunQueriesInParallel"
-	flagLogQLScope                = "logQLScope"
-	flagLokiExperimentalStreaming = "lokiExperimentalStreaming"
-	fromAlertHeaderName           = "FromAlert"
+	flagLokiLogsDataplane              = "lokiLogsDataplane"
+	flagLokiRunQueriesInParallel       = "lokiRunQueriesInParallel"
+	flagLogQLScope                     = "logQLScope"
+	flagLokiExperimentalStreaming      = "lokiExperimentalStreaming"
+	flagLokiLogsVolumeBoundaryCoverage = "lokiLogsVolumeBoundaryCoverage"
+	fromAlertHeaderName                = "FromAlert"
 )
 
 type DataSource struct {
@@ -283,6 +284,13 @@ func executeQuery(ctx context.Context, query *lokiQuery, req *backend.QueryDataR
 
 // we extracted this part of the functionality to make it easy to unit-test it
 func runQuery(ctx context.Context, api *LokiAPI, query *lokiQuery, responseOpts ResponseOpts, plog log.Logger) (*backend.DataResponse, error) {
+	if query.SupportingQueryType == SupportingQueryLogsVolume && query.QueryType == QueryTypeRange && isFeatureEnabled(ctx, flagLokiLogsVolumeBoundaryCoverage) {
+		return runLogsVolumeQuery(ctx, api, query, responseOpts, plog)
+	}
+	return runSingleQuery(ctx, api, query, responseOpts, plog)
+}
+
+func runSingleQuery(ctx context.Context, api *LokiAPI, query *lokiQuery, responseOpts ResponseOpts, plog log.Logger) (*backend.DataResponse, error) {
 	res, err := api.DataQuery(ctx, *query, responseOpts)
 	if err != nil {
 		plog.Debug("Error querying loki", "error", err)
