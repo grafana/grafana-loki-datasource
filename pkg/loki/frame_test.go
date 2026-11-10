@@ -295,19 +295,20 @@ func TestParseLogline(t *testing.T) {
 
 	t.Run("data skipped", func(t *testing.T) {
 		c := custom(map[string]interface{}{
-			"outcome":          "data_skipped",
-			"hintStatus":       "ok",
-			"hintLookupTime":   412000000.0,
-			"hintRanges":       18.0,
-			"skippedRequests":  20.0,
-			"narrowedRequests": 4.0,
-			"plannedChunks":    120000.0,
-			"scannedChunks":    4800.0,
-			"chunkFilterRatio": 0.96,
-			"objectRequests":   37.0,
-			"ioBytes":          9437184.0,
-			"ioWait":           210000000.0,
-			"hintWaitTime":     0.0,
+			"outcome":             "data_skipped",
+			"hintStatus":          "ok",
+			"hintLookupTime":      412000000.0,
+			"hintRanges":          18.0,
+			"skippedRequests":     20.0,
+			"narrowedRequests":    4.0,
+			"passthroughRequests": 7.0,
+			"plannedChunks":       120000.0,
+			"scannedChunks":       4800.0,
+			"chunkFilterRatio":    0.96,
+			"objectRequests":      37.0,
+			"ioBytes":             9437184.0,
+			"ioWait":              210000000.0,
+			"hintWaitTime":        0.0,
 		})
 
 		byName := map[string]float64{}
@@ -322,21 +323,38 @@ func TestParseLogline(t *testing.T) {
 		require.Equal(t, 4800.0, byName["Full-Text Index: scanned chunks"])
 		require.Equal(t, 20.0, byName["Full-Text Index: skipped requests"])
 		require.Equal(t, 4.0, byName["Full-Text Index: narrowed requests"])
+		require.Equal(t, 7.0, byName["Full-Text Index: passthrough requests"])
+		require.Empty(t, units["Full-Text Index: passthrough requests"])
 
-		// only the five stats above are exposed, the other fields in the response are ignored
+		// only the six stats above are exposed, the other fields in the response are ignored
 		var loglineStats int
 		for _, s := range parseStats(c) {
 			if strings.HasPrefix(s.DisplayName, "Full-Text Index: ") {
 				loglineStats++
 			}
 		}
-		require.Equal(t, 5, loglineStats)
+		require.Equal(t, 6, loglineStats)
 
 		notice := parseLoglineNotice(c)
 		require.NotNil(t, notice)
 		require.Equal(t, data.NoticeSeverityInfo, notice.Severity)
 		require.Equal(t, "Full-Text Index: 96% of data skipped", notice.Text)
 	})
+
+	for _, tc := range []struct {
+		name    string
+		logline map[string]interface{}
+	}{
+		{name: "zero passthrough requests", logline: map[string]interface{}{"passthroughRequests": 0.0}},
+		{name: "passthrough requests absent", logline: map[string]interface{}{"narrowedRequests": 4.0}},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			require.Contains(t, parseStats(custom(tc.logline)), data.QueryStat{
+				FieldConfig: data.FieldConfig{DisplayName: "Full-Text Index: passthrough requests"},
+				Value:       0,
+			})
+		})
+	}
 
 	t.Run("not used", func(t *testing.T) {
 		notice := parseLoglineNotice(custom(map[string]interface{}{"outcome": "recent_data_only"}))
