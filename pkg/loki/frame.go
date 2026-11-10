@@ -385,6 +385,7 @@ func parseLoglineStats(logline map[string]interface{}) []data.QueryStat {
 		makeStat("Full-Text Index: scanned chunks", logline["scannedChunks"], ""),
 		makeStat("Full-Text Index: skipped requests", logline["skippedRequests"], ""),
 		makeStat("Full-Text Index: narrowed requests", logline["narrowedRequests"], ""),
+		makeStat("Full-Text Index: passthrough requests", logline["passthroughRequests"], ""),
 	}
 }
 
