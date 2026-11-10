@@ -283,6 +283,7 @@ const FULL_TEXT_SUMMED_STATS = [
   FULL_TEXT_SCANNED_CHUNKS_STAT,
   'Full-Text Index: skipped requests',
   'Full-Text Index: narrowed requests',
+  'Full-Text Index: passthrough requests',
 ];
 
 function sumStat(
