@@ -38,7 +38,6 @@
     "@types/react": "18.3.31",
     "@types/react-dom": "18.3.7",
     "@types/react-window": "1.8.8",
-    "@types/semver": "7.8.0",
     "@typescript-eslint/eslint-plugin": "8.72.1",
     "@typescript-eslint/parser": "8.72.1",
     "copy-webpack-plugin": "13.0.1",
