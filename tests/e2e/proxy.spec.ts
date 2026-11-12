@@ -1,10 +1,12 @@
 import { expect, test } from '@grafana/plugin-e2e';
+import semver from 'semver';
 
 import { isCloudRun } from './env';
 
 test.describe('Data source proxy', () => {
-  test.beforeEach(() => {
+  test.beforeEach(({ grafanaVersion }) => {
     test.skip(isCloudRun, 'These tests require the locally provisioned Loki instance.');
+    test.skip(semver.lt(grafanaVersion, '13.2.0'), 'Grafana before 13.2 uses its built-in Loki plugin.');
   });
 
   for (const prefix of ['', '/loki']) {
