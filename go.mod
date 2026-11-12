@@ -2,6 +2,9 @@ module github.com/grafana/grafana-loki-datasource
 
 go 1.27.3
 
+// FIPS mode off by default, enable with GODEBUG=fips140=on
+godebug fips140=off
+
 ignore ./node_modules
 
 replace github.com/hashicorp/memberlist => github.com/grafana/memberlist v0.3.1-0.20251126142931-6f9f62ab6f86
