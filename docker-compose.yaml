@@ -47,3 +47,8 @@ configs:
     content: |
       [plugin.loki]
       as_external = true
+
+      # Stops Grafana 13.2+ from replacing a build older than the catalog version. The
+      # replacement also deletes the files in the mounted dist/.
+      [plugins]
+      preinstall_auto_update = false
