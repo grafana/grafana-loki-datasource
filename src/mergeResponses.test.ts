@@ -657,7 +657,12 @@ describe('combineResponses', () => {
     const makeResponse = (stats?: QueryResultMetaStat[], notices?: QueryResultMetaNotice[]): DataQueryResponse => ({
       data: [{ ...metricFrameA, meta: { ...metricFrameA.meta, stats, notices } }],
     });
-    const fullText = (planned: number, scanned: number, skippedRequests: number): QueryResultMetaStat[] => [
+    const fullText = (
+      planned: number,
+      scanned: number,
+      skippedRequests: number,
+      passthroughRequests = 0
+    ): QueryResultMetaStat[] => [
       {
         displayName: 'Full-Text Index: chunk filter ratio',
         unit: 'percent',
@@ -667,17 +672,29 @@ describe('combineResponses', () => {
       { displayName: 'Full-Text Index: scanned chunks', value: scanned },
       { displayName: 'Full-Text Index: skipped requests', value: skippedRequests },
       { displayName: 'Full-Text Index: narrowed requests', value: 1 },
+      { displayName: 'Full-Text Index: passthrough requests', value: passthroughRequests },
     ];
     const find = (response: DataQueryResponse, name: string) =>
       response.data[0].meta.stats.find((s: QueryResultMetaStat) => s.displayName === name);
 
     it('sums the counts', () => {
-      const combined = combineResponses(makeResponse(fullText(100, 10, 3)), makeResponse(fullText(900, 900, 4)));
+      const combined = combineResponses(makeResponse(fullText(100, 10, 3, 2)), makeResponse(fullText(900, 900, 4, 5)));
 
       expect(find(combined, 'Full-Text Index: planned chunks')?.value).toBe(1000);
       expect(find(combined, 'Full-Text Index: scanned chunks')?.value).toBe(910);
       expect(find(combined, 'Full-Text Index: skipped requests')?.value).toBe(7);
       expect(find(combined, 'Full-Text Index: narrowed requests')?.value).toBe(2);
+      expect(find(combined, 'Full-Text Index: passthrough requests')?.value).toBe(7);
+    });
+
+    it('preserves passthrough requests when only one response reports them', () => {
+      const responseA = makeResponse(fullText(100, 10, 3, 2));
+      const responseB = makeResponse(
+        fullText(900, 900, 4).filter((stat) => stat.displayName !== 'Full-Text Index: passthrough requests')
+      );
+
+      expect(find(combineResponses(responseA, responseB), 'Full-Text Index: passthrough requests')?.value).toBe(2);
+      expect(find(combineResponses(responseB, responseA), 'Full-Text Index: passthrough requests')?.value).toBe(2);
     });
 
     it('drops the chunk filter ratio instead of recomputing it', () => {
