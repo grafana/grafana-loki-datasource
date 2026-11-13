@@ -297,6 +297,39 @@ func TestParseQuery(t *testing.T) {
 		require.Error(t, err)
 	})
 
+	t.Run("max lines falls back when the query has no positive line limit", func(t *testing.T) {
+		tests := []struct {
+			name     string
+			json     string
+			fallback int
+			want     int
+		}{
+			{"no line limit", `{"expr": "{app=\"test\"}", "refId": "A"}`, 1000, 1000},
+			{"zero line limit", `{"expr": "{app=\"test\"}", "refId": "A", "maxLines": 0}`, 300, 300},
+			{"negative line limit", `{"expr": "{app=\"test\"}", "refId": "A", "maxLines": -5}`, 300, 300},
+			{"positive line limit wins", `{"expr": "{app=\"test\"}", "refId": "A", "maxLines": 50}`, 1000, 50},
+		}
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				queryContext := &backend.QueryDataRequest{
+					Queries: []backend.DataQuery{
+						{
+							JSON: []byte(tt.json),
+							TimeRange: backend.TimeRange{
+								From: time.Now().Add(-time.Hour),
+								To:   time.Now(),
+							},
+							Interval: time.Second,
+						},
+					},
+				}
+				models, err := parseQuery(queryContext, false, tt.fallback)
+				require.NoError(t, err)
+				require.Equal(t, tt.want, models[0].MaxLines)
+			})
+		}
+	})
+
 	t.Run("interpolate variables, range between 1s and 0.5s", func(t *testing.T) {
 		expr := "go_goroutines $__interval $__interval_ms $__range $__range_s $__range_ms"
 		queryType := dataquery.LokiQueryTypeRange
