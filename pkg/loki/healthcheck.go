@@ -88,6 +88,6 @@ func getHealthCheckMessage(err error, logger log.Logger) *backend.CheckHealthRes
 	logger.Error("Loki health check failed", "error", err)
 	return &backend.CheckHealthResult{
 		Status:  backend.HealthStatusError,
-		Message: "Unable to connect with Loki. Please check the server logs for more details.",
+		Message: err.Error(),
 	}
 }
