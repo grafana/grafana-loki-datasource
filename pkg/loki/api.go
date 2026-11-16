@@ -49,10 +49,8 @@ func makeDataRequest(ctx context.Context, lokiDsUrl string, query lokiQuery) (*h
 
 	qs.Set("direction", string(query.Direction))
 
-	// MaxLines defaults to zero when not received,
-	// and Loki does not like limit=0, even when it is not needed
-	// (for example for metric queries), so we
-	// only send it when it's set
+	// parseQuery fills MaxLines from the data source setting, so it is set
+	// in practice. Loki rejects limit=0, so send it only when positive.
 	if query.MaxLines > 0 {
 		qs.Set("limit", fmt.Sprintf("%d", query.MaxLines))
 	}

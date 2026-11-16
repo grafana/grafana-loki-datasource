@@ -8,6 +8,7 @@ import (
 	neturl "net/url"
 	"path"
 	"regexp"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -71,6 +72,7 @@ func NewDatasource(ctx context.Context, settings backend.DataSourceInstanceSetti
 		info: &datasourceInfo{
 			HTTPClient: client,
 			URL:        settings.URL,
+			MaxLines:   parseMaxLines(settings.JSONData),
 			streams:    make(map[string]data.FrameJSONCache),
 		},
 		tracer: tracer,
@@ -86,9 +88,32 @@ var (
 	stageParseResponse   = "parseResponse"
 )
 
+// defaultMaxLines is the line limit when the data source sets none.
+// It matches DEFAULT_MAX_LINES in the frontend.
+const defaultMaxLines = 1000
+
+// parseMaxLines reads the data source line limit from jsonData.maxLines.
+// The config UI saves it as a string; provisioning can save a number.
+// A missing, invalid, or non-positive value gives defaultMaxLines.
+func parseMaxLines(jsonData json.RawMessage) int {
+	var settings struct {
+		MaxLines json.RawMessage `json:"maxLines"`
+	}
+	if err := json.Unmarshal(jsonData, &settings); err != nil {
+		return defaultMaxLines
+	}
+	n, err := strconv.Atoi(strings.TrimSpace(strings.Trim(string(settings.MaxLines), `"`)))
+	if err != nil || n <= 0 {
+		return defaultMaxLines
+	}
+	return n
+}
+
 type datasourceInfo struct {
 	HTTPClient *http.Client
 	URL        string
+	// MaxLines is the data source line limit, used when a query sets none.
+	MaxLines int
 
 	// open streams
 	streams   map[string]data.FrameJSONCache
@@ -212,7 +237,7 @@ func queryData(ctx context.Context, req *backend.QueryDataRequest, dsInfo *datas
 	api := newLokiAPI(dsInfo.HTTPClient, dsInfo.URL, plog, tracer)
 
 	start := time.Now()
-	queries, err := parseQuery(req, logQLScopes)
+	queries, err := parseQuery(req, logQLScopes, dsInfo.MaxLines)
 	if err != nil {
 		plog.Debug("Failed to prepare request to Loki", "error", err, "duration", time.Since(start), "queriesLength", len(queries), "stage", stagePrepareRequest)
 		return result, err
