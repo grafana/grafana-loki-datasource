@@ -36,3 +36,19 @@ services:
     extends:
       file: .config/docker-compose-base.yaml
       service: grafana
+    configs:
+      # Serve this build in place of core Loki. Env vars can't set this, because Grafana
+      # ignores GF_* overrides for sections that no ini file defines, such as [plugin.loki].
+      - source: grafana_custom_ini
+        target: /etc/grafana/grafana.ini
+
+configs:
+  grafana_custom_ini:
+    content: |
+      [plugin.loki]
+      as_external = true
+
+      # Stops Grafana 13.2+ from replacing a build older than the catalog version. The
+      # replacement also deletes the files in the mounted dist/.
+      [plugins]
+      preinstall_auto_update = false
