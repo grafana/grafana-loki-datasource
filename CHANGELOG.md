@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Fix: Restore POST queries through the Grafana data source proxy for instant queries, range queries, labels, label values, and series, with or without `/loki` in the data source URL. These routes require `datasources:query` permission; non-allowlisted writes remain blocked.
 - Fix a connection freeze between Grafana and the plugin under heavy query load by updating google.golang.org/grpc to v1.85.0 ([grpc/grpc-go#9330](https://github.com/grpc/grpc-go/issues/9330))
 
 ## 13.2.5
