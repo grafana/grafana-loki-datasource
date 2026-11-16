@@ -7,21 +7,21 @@ godebug fips140=off
 
 ignore ./node_modules
 
-replace github.com/hashicorp/memberlist => github.com/grafana/memberlist v0.3.1-0.20251126142931-6f9f62ab6f86
+replace github.com/hashicorp/memberlist => github.com/grafana/memberlist d17264b4a464
 
 require (
 	github.com/gorilla/websocket v1.5.4-0.20250319132907-e064f32e3674
-	github.com/grafana/dskit v0.0.0-20260427162712-0457a92dacc3
-	github.com/grafana/grafana-plugin-sdk-go v0.296.4
-	github.com/grafana/grafana-prometheus-datasource/pkg/promlib v0.0.19
-	github.com/grafana/grafana/apps/scope v0.0.0-20260427171703-d4f46decefcb
-	github.com/grafana/loki/v3 v3.7.7
+	github.com/grafana/dskit 5490ebb9aba4
+	github.com/grafana/grafana-plugin-sdk-go v0.298.0
+	github.com/grafana/grafana-prometheus-datasource/pkg/promlib v0.0.25
+	github.com/grafana/grafana/apps/scope 2ec4c98d1619
+	github.com/grafana/loki/v3 v3.7.9
 	github.com/json-iterator/go v1.1.12
-	github.com/prometheus/client_golang v1.24.1
-	github.com/prometheus/prometheus v0.314.0
+	github.com/prometheus/client_golang v1.25.0
+	github.com/prometheus/prometheus v0.315.1
 	github.com/stretchr/testify v1.12.1
-	go.opentelemetry.io/otel v1.46.0
-	go.opentelemetry.io/otel/trace v1.46.0
+	go.opentelemetry.io/otel v1.47.0
+	go.opentelemetry.io/otel/trace v1.47.0
 	google.golang.org/grpc v1.85.0
 )
 
@@ -117,7 +117,7 @@ require (
 	github.com/jaegertracing/jaeger-idl v0.11.4 // indirect
 	github.com/jpillora/backoff v1.0.0 // indirect
 	github.com/jszwedko/go-datemath v0.1.1-0.20260113213115-7f666eef0523 // indirect
-	github.com/klauspost/compress v1.20.0 // indirect
+	github.com/klauspost/compress v1.20.2 // indirect
 	github.com/klauspost/cpuid/v2 v2.4.0 // indirect
 	github.com/magefile/mage v1.17.2 // indirect
 	github.com/mattetti/filebuffer v1.0.1 // indirect
@@ -205,7 +205,7 @@ require (
 	go4.org/netipx v0.0.0-20260823151212-3075585bcbeb // indirect
 	golang.org/x/crypto v0.57.0 // indirect
 	golang.org/x/exp v0.0.0-20260813180055-c1d0aacb2297 // indirect
-	golang.org/x/net v0.60.0 // indirect
+	golang.org/x/net v0.62.0 // indirect
 	golang.org/x/oauth2 v0.37.0 // indirect
 	golang.org/x/sync v0.23.0 // indirect
 	golang.org/x/sys v0.48.0 // indirect
