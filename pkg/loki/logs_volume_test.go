@@ -107,6 +107,24 @@ func TestLogsVolumeMergesBucketsForEachLevel(t *testing.T) {
 	}
 }
 
+func TestLogsVolumeMergeKeepsQueryGroupFrameLast(t *testing.T) {
+	series := data.NewFrame("", data.NewField("Time", nil, []time.Time{time.Unix(60, 0)}), data.NewField("Value", data.Labels{"level": "info"}, []float64{1}))
+	series.Meta = &data.FrameMeta{Stats: []data.QueryStat{{FieldConfig: data.FieldConfig{DisplayName: statSummaryTotalBytesProcessed}, Value: 1}}}
+	queryGroup := newQueryGroupFrame("A", "1000")
+	query := lokiQuery{Expr: `sum by (level) (count_over_time({app="test"}[1m]))`, Start: time.Unix(30, 0), End: time.Unix(210, 0), Step: time.Minute}
+	parts, err := splitLogsVolumeQuery(query)
+	require.NoError(t, err)
+	require.Len(t, parts, 3)
+
+	merged := mergeLogsVolumeResults(query, parts, []*backend.DataResponse{
+		{Frames: data.Frames{queryGroup, series}},
+		{Frames: data.Frames{queryGroup}},
+		{},
+	})
+	require.Equal(t, data.Frames{series, queryGroup}, merged.Frames)
+	require.Len(t, series.Meta.Stats, 1, "the series keeps the merged stats")
+}
+
 func TestLogsVolumeMergeKeepsSeriesWithCollidingLabelStrings(t *testing.T) {
 	first := data.Labels{"a": "x, b=y"}
 	second := data.Labels{"a": "x", "b": "y"}

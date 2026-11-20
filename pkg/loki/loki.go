@@ -324,6 +324,10 @@ func runSingleQuery(ctx context.Context, api *LokiAPI, query *lokiQuery, respons
 
 	kept := res.Frames[:0]
 	for _, frame := range res.Frames {
+		if frame.Name == queryGroupFrameName {
+			kept = append(kept, frame)
+			continue
+		}
 		// Promlib creates field-less "Query statistics" / "Warnings" frames
 		// when Loki returns stats or notices but no series. That empty schema
 		// breaks frontend conventions, so drop those placeholders.

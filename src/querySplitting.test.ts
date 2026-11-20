@@ -320,6 +320,35 @@ describe.each([false, true])('runSplitQuery(aligned = %s)', (lokiAlignedQuerySpl
     });
   });
 
+  test('Sends the group range with every split, and the estimate from the first split with the later ones', async () => {
+    const queryGroupFrame = {
+      name: 'loki-query-group',
+      refId: 'A',
+      fields: [],
+      length: 0,
+      meta: { custom: { estimatedBytes: '1000' } },
+    };
+    jest.mocked(datasource.runQuery).mockReturnValueOnce(of({ data: [queryGroupFrame] }));
+    await expect(runSplitQuery(datasource, globalRequest)).toEmitValuesWith((emitted) => {
+      const queryGroups = jest.mocked(datasource.runQuery).mock.calls.map(([request]) => request.targets[0].queryGroup);
+      expect(queryGroups).toEqual([
+        { from: from.valueOf(), to: to.valueOf() },
+        { from: from.valueOf(), to: to.valueOf(), estimatedBytes: '1000' },
+        { from: from.valueOf(), to: to.valueOf(), estimatedBytes: '1000' },
+      ]);
+      expect(emitted[emitted.length - 1].data).toEqual([]);
+    });
+  });
+
+  test('Does not send a query group for queries that are not split', async () => {
+    const request = createRequest([
+      { expr: 'count_over_time({a="b"}[1m])', refId: 'A', queryType: LokiQueryType.Instant },
+    ]);
+    await expect(runSplitQuery(datasource, request)).toEmitValuesWith(() => {
+      expect(jest.mocked(datasource.runQuery).mock.calls[0][0].targets[0].queryGroup).toBeUndefined();
+    });
+  });
+
   test('Correctly splits queries without step', async () => {
     await expect(runSplitQuery(datasource, globalRequest)).toEmitValuesWith(() => {
       if (lokiAlignedQuerySplitting) {
@@ -340,6 +369,7 @@ describe.each([false, true])('runSplitQuery(aligned = %s)', (lokiAlignedQuerySpl
                 legendFormat: undefined,
                 refId: 'A',
                 step: undefined,
+                queryGroup: { from: from.valueOf(), to: to.valueOf() },
                 limitsContext: {
                   expr: 'count_over_time({a="b"}[1m])',
                   from: from.valueOf(),
@@ -367,6 +397,7 @@ describe.each([false, true])('runSplitQuery(aligned = %s)', (lokiAlignedQuerySpl
                 legendFormat: undefined,
                 refId: 'A',
                 step: undefined,
+                queryGroup: { from: from.valueOf(), to: to.valueOf() },
                 limitsContext: undefined,
               },
             ],
@@ -390,6 +421,7 @@ describe.each([false, true])('runSplitQuery(aligned = %s)', (lokiAlignedQuerySpl
                 legendFormat: undefined,
                 refId: 'A',
                 step: undefined,
+                queryGroup: { from: from.valueOf(), to: to.valueOf() },
                 limitsContext: undefined,
               },
             ],
@@ -413,6 +445,7 @@ describe.each([false, true])('runSplitQuery(aligned = %s)', (lokiAlignedQuerySpl
                 legendFormat: undefined,
                 refId: 'A',
                 step: undefined,
+                queryGroup: { from: from.valueOf(), to: to.valueOf() },
                 limitsContext: {
                   expr: 'count_over_time({a="b"}[1m])',
                   from: from.valueOf(),
@@ -440,6 +473,7 @@ describe.each([false, true])('runSplitQuery(aligned = %s)', (lokiAlignedQuerySpl
                 legendFormat: undefined,
                 refId: 'A',
                 step: undefined,
+                queryGroup: { from: from.valueOf(), to: to.valueOf() },
                 limitsContext: undefined,
               },
             ],
@@ -463,6 +497,7 @@ describe.each([false, true])('runSplitQuery(aligned = %s)', (lokiAlignedQuerySpl
                 legendFormat: undefined,
                 refId: 'A',
                 step: undefined,
+                queryGroup: { from: from.valueOf(), to: to.valueOf() },
                 limitsContext: undefined,
               },
             ],
@@ -494,6 +529,7 @@ describe.each([false, true])('runSplitQuery(aligned = %s)', (lokiAlignedQuerySpl
                 legendFormat: undefined,
                 refId: 'A',
                 step: '10s',
+                queryGroup: { from: from.valueOf(), to: to.valueOf() },
                 limitsContext: {
                   expr: 'count_over_time({a="b"}[1m])',
                   from: from.valueOf(),
@@ -521,6 +557,7 @@ describe.each([false, true])('runSplitQuery(aligned = %s)', (lokiAlignedQuerySpl
                 legendFormat: undefined,
                 refId: 'A',
                 step: '10s',
+                queryGroup: { from: from.valueOf(), to: to.valueOf() },
                 limitsContext: undefined,
               },
             ],
@@ -544,6 +581,7 @@ describe.each([false, true])('runSplitQuery(aligned = %s)', (lokiAlignedQuerySpl
                 legendFormat: undefined,
                 refId: 'A',
                 step: '10s',
+                queryGroup: { from: from.valueOf(), to: to.valueOf() },
                 limitsContext: undefined,
               },
             ],
@@ -567,6 +605,7 @@ describe.each([false, true])('runSplitQuery(aligned = %s)', (lokiAlignedQuerySpl
                 legendFormat: undefined,
                 refId: 'A',
                 step: '10s',
+                queryGroup: { from: from.valueOf(), to: to.valueOf() },
                 limitsContext: {
                   expr: 'count_over_time({a="b"}[1m])',
                   from: from.valueOf(),
@@ -594,6 +633,7 @@ describe.each([false, true])('runSplitQuery(aligned = %s)', (lokiAlignedQuerySpl
                 legendFormat: undefined,
                 refId: 'A',
                 step: '10s',
+                queryGroup: { from: from.valueOf(), to: to.valueOf() },
                 limitsContext: undefined,
               },
             ],
@@ -617,6 +657,7 @@ describe.each([false, true])('runSplitQuery(aligned = %s)', (lokiAlignedQuerySpl
                 legendFormat: undefined,
                 refId: 'A',
                 step: '10s',
+                queryGroup: { from: from.valueOf(), to: to.valueOf() },
                 limitsContext: undefined,
               },
             ],
@@ -724,7 +765,9 @@ describe.each([false, true])('runSplitQuery(aligned = %s)', (lokiAlignedQuerySpl
               request: {
                 ...request,
                 // Only includes queries that are not hidden
-                targets: request.targets.filter((query) => !query.hide),
+                targets: request.targets
+                  .filter((query) => !query.hide)
+                  .map((query) => ({ ...query, queryGroup: expect.any(Object) })),
               },
             },
           ],
@@ -752,7 +795,9 @@ describe.each([false, true])('runSplitQuery(aligned = %s)', (lokiAlignedQuerySpl
               request: {
                 ...request,
                 // Only includes queries with an expression
-                targets: request.targets.filter((query) => query.expr),
+                targets: request.targets
+                  .filter((query) => query.expr)
+                  .map((query) => ({ ...query, queryGroup: expect.any(Object) })),
               },
             },
           ],

@@ -162,6 +162,7 @@ function runSplitGroupedQueries(
   let retryTimer: ReturnType<typeof setTimeout> | null = null;
   let splitQueryIndex = 0;
   const shardQueryIndex = options.shardQueryIndex ?? 0;
+  const estimatedBytes = new Map<string, string>();
 
   const runNextRequest = (subscriber: Subscriber<DataQueryResponse>, requestN: number, requestGroup: number) => {
     if (config.featureToggles.lokiQueryLimitsContext) {
@@ -239,7 +240,7 @@ function runSplitGroupedQueries(
       adjustTargetsFromResponseState(group.request.targets, mergedResponse),
       range,
       group.request.range
-    );
+    ).map((target) => withQueryGroupEstimate(target, estimatedBytes));
 
     if (!targets.length) {
       nextRequest();
@@ -254,6 +255,7 @@ function runSplitGroupedQueries(
 
     subquerySubscription = datasource.runQuery(subRequest).subscribe({
       next: (partialResponse) => {
+        partialResponse = takeQueryGroupEstimates(partialResponse, estimatedBytes);
         if ((partialResponse.errors ?? []).length > 0 || partialResponse.error != null) {
           if (retry(partialResponse)) {
             return;
@@ -306,6 +308,22 @@ function runSplitGroupedQueries(
 }
 
 export const LOADING_FRAME_NAME = 'loki-splitting-progress';
+const QUERY_GROUP_FRAME_NAME = 'loki-query-group';
+
+// Loki returns its size estimate for a query group on the group's first split, in a frame without fields.
+// The group's later splits send it back, so Loki gates them without estimating the group again.
+function takeQueryGroupEstimates(response: DataQueryResponse, estimatedBytes: Map<string, string>): DataQueryResponse {
+  const [carriers, data] = partition(response.data, (frame) => frame.name === QUERY_GROUP_FRAME_NAME);
+  carriers.forEach((frame) => estimatedBytes.set(frame.refId, frame.meta?.custom?.estimatedBytes));
+  return { ...response, data };
+}
+
+function withQueryGroupEstimate(target: LokiQuery, estimatedBytes: Map<string, string>): LokiQuery {
+  const estimate = estimatedBytes.get(target.refId);
+  return target.queryGroup && estimate
+    ? { ...target, queryGroup: { ...target.queryGroup, estimatedBytes: estimate } }
+    : target;
+}
 
 function updateLoadingFrame(
   response: DataQueryResponse,
@@ -459,6 +477,13 @@ export function runSplitQuery(
       request: { ...request, targets: nonSplittingQueries },
       partition: [request.range],
     });
+  }
+
+  // Every split carries the range of its group, so Loki can gate and look up hints once for the whole group.
+  for (const group of requests.filter(({ partition }) => partition.length > 1)) {
+    const from = Math.min(...group.partition.map((range) => range.from.valueOf()));
+    const to = Math.max(...group.partition.map((range) => range.to.valueOf()));
+    group.request.targets = group.request.targets.map((target) => ({ ...target, queryGroup: { from, to } }));
   }
 
   const startTime = new Date();
