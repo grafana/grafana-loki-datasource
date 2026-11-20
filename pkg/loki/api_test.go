@@ -99,6 +99,33 @@ func TestApiLogVolume(t *testing.T) {
 		require.True(t, called)
 	})
 
+	t.Run("X-Loki-Query-Group headers should be set when QueryGroup is provided", func(t *testing.T) {
+		called := false
+		api := makeMockedAPI(200, "application/json", response, func(req *http.Request) {
+			called = true
+			require.Equal(t, "1000", req.Header.Get("X-Loki-Query-Group-From"))
+			require.Equal(t, "2000", req.Header.Get("X-Loki-Query-Group-To"))
+			require.Equal(t, "42", req.Header.Get("X-Loki-Query-Group-Estimated-Bytes"))
+		})
+		queryGroup := &dataquery.QueryGroup{From: 1000, To: 2000, EstimatedBytes: "42"}
+		_, err := api.DataQuery(context.Background(), lokiQuery{Expr: "", QueryType: QueryTypeRange, QueryGroup: queryGroup}, ResponseOpts{})
+		require.NoError(t, err)
+		require.True(t, called)
+	})
+
+	t.Run("X-Loki-Query-Group headers should not get set when QueryGroup is not provided", func(t *testing.T) {
+		called := false
+		api := makeMockedAPI(200, "application/json", response, func(req *http.Request) {
+			called = true
+			require.Empty(t, req.Header.Get("X-Loki-Query-Group-From"))
+			require.Empty(t, req.Header.Get("X-Loki-Query-Group-To"))
+			require.Empty(t, req.Header.Get("X-Loki-Query-Group-Estimated-Bytes"))
+		})
+		_, err := api.DataQuery(context.Background(), lokiQuery{Expr: "", QueryType: QueryTypeRange}, ResponseOpts{})
+		require.NoError(t, err)
+		require.True(t, called)
+	})
+
 	t.Run("data sample queries should set data sample http header", func(t *testing.T) {
 		called := false
 		api := makeMockedAPI(200, "application/json", response, func(req *http.Request) {

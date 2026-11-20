@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/grafana/grafana-plugin-sdk-go/backend"
+	"github.com/grafana/grafana-plugin-sdk-go/data"
 	"github.com/grafana/grafana-plugin-sdk-go/experimental"
 
 	"github.com/stretchr/testify/require"
@@ -100,6 +101,26 @@ func TestEmptyMetricResponseWithStatsDropsQueryStatisticsFrame(t *testing.T) {
 	dr, err := runQuery(context.Background(), makeMockedAPI(http.StatusOK, "application/json", body, nil), &query, ResponseOpts{}, backend.NewLoggerWith("logger", "test"))
 	require.NoError(t, err)
 	require.Empty(t, dr.Frames)
+}
+
+type roundTripFunc func(*http.Request) (*http.Response, error)
+
+func (f roundTripFunc) RoundTrip(req *http.Request) (*http.Response, error) { return f(req) }
+
+func TestEmptyMetricResponseKeepsQueryGroupFrame(t *testing.T) {
+	body := []byte(`{"status": "success", "data": {"resultType": "matrix", "result": []}}`)
+	api := makeMockedAPI(http.StatusOK, "application/json", body, nil)
+	transport := api.client.Transport
+	api.client.Transport = roundTripFunc(func(req *http.Request) (*http.Response, error) {
+		resp, err := transport.RoundTrip(req)
+		resp.Header.Set("X-Loki-Query-Group-Estimated-Bytes", "1000")
+		return resp, err
+	})
+	query := lokiQuery{Expr: "count_over_time({app=\"foo\"}[1m])", Step: time.Second, QueryType: QueryTypeRange, Direction: DirectionBackward, RefID: "A"}
+
+	dr, err := runQuery(context.Background(), api, &query, ResponseOpts{}, backend.NewLoggerWith("logger", "test"))
+	require.NoError(t, err)
+	require.Equal(t, data.Frames{newQueryGroupFrame("A", "1000")}, dr.Frames)
 }
 
 func TestEmptyLogsResponseWithStatsKeepsLogsFrame(t *testing.T) {
