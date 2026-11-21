@@ -31,7 +31,7 @@ func TestParseQuery(t *testing.T) {
 				},
 			},
 		}
-		models, err := parseQuery(queryContext, false)
+		models, err := parseQuery(queryContext, false, 0)
 		require.NoError(t, err)
 		require.Equal(t, time.Second*15, models[0].Step)
 		require.Equal(t, "go_goroutines 15s 15000 3000s 3000 3000000", models[0].Expr)
@@ -58,7 +58,7 @@ func TestParseQuery(t *testing.T) {
 				},
 			},
 		}
-		models, err := parseQuery(queryContext, false)
+		models, err := parseQuery(queryContext, false, 0)
 		require.NoError(t, err)
 		require.Equal(t, SupportingQueryLogsVolume, models[0].SupportingQueryType)
 	})
@@ -84,7 +84,7 @@ func TestParseQuery(t *testing.T) {
 				},
 			},
 		}
-		models, err := parseQuery(queryContext, false)
+		models, err := parseQuery(queryContext, false, 0)
 		require.NoError(t, err)
 		require.Equal(t, SupportingQueryType("foo"), models[0].SupportingQueryType)
 	})
@@ -110,7 +110,7 @@ func TestParseQuery(t *testing.T) {
 				},
 			},
 		}
-		models, err := parseQuery(queryContext, false)
+		models, err := parseQuery(queryContext, false, 0)
 		require.NoError(t, err)
 		require.Equal(t, SupportingQueryNone, models[0].SupportingQueryType)
 	})
@@ -136,7 +136,7 @@ func TestParseQuery(t *testing.T) {
 				},
 			},
 		}
-		models, err := parseQuery(queryContext, true)
+		models, err := parseQuery(queryContext, true, 0)
 		require.NoError(t, err)
 		require.Equal(t, time.Second*15, models[0].Step)
 		require.Equal(t, 1, len(models[0].Scopes))
@@ -171,7 +171,7 @@ func TestParseQuery(t *testing.T) {
 				},
 			},
 		}
-		models, err := parseQuery(queryContext, true)
+		models, err := parseQuery(queryContext, true, 0)
 		require.NoError(t, err)
 		require.Equal(t, `count_over_time({service_name="apache", __stream_shard__="2"}[15s])`, models[0].Expr)
 		// If the limits context expression is missing, we don't set any limits context
@@ -205,7 +205,7 @@ func TestParseQuery(t *testing.T) {
 				},
 			},
 		}
-		models, err := parseQuery(queryContext, true)
+		models, err := parseQuery(queryContext, true, 0)
 		require.NoError(t, err)
 		require.Equal(t, time.Second*15, models[0].Step)
 		require.Equal(t, `count_over_time({service_name="apache", __stream_shard__="2"}[15s])`, models[0].Expr)
@@ -229,7 +229,7 @@ func TestParseQuery(t *testing.T) {
 				},
 			},
 		}
-		models, err := parseQuery(queryContext, false)
+		models, err := parseQuery(queryContext, false, 0)
 		require.NoError(t, err)
 		require.True(t, models[0].Start.Equal(from))
 		require.True(t, models[0].End.Equal(to))
@@ -252,7 +252,7 @@ func TestParseQuery(t *testing.T) {
 				},
 			},
 		}
-		models, err := parseQuery(queryContext, false)
+		models, err := parseQuery(queryContext, false, 0)
 		require.NoError(t, err)
 		require.Equal(t, startNs, models[0].Start.UnixNano())
 		require.Equal(t, endNs, models[0].End.UnixNano())
@@ -274,7 +274,7 @@ func TestParseQuery(t *testing.T) {
 				},
 			},
 		}
-		models, err := parseQuery(queryContext, false)
+		models, err := parseQuery(queryContext, false, 0)
 		require.NoError(t, err)
 		require.True(t, models[0].Start.Equal(from))
 		require.Equal(t, endNs, models[0].End.UnixNano())
@@ -293,8 +293,41 @@ func TestParseQuery(t *testing.T) {
 				},
 			},
 		}
-		_, err := parseQuery(queryContext, false)
+		_, err := parseQuery(queryContext, false, 0)
 		require.Error(t, err)
+	})
+
+	t.Run("max lines falls back when the query has no positive line limit", func(t *testing.T) {
+		tests := []struct {
+			name     string
+			json     string
+			fallback int
+			want     int
+		}{
+			{"no line limit", `{"expr": "{app=\"test\"}", "refId": "A"}`, 1000, 1000},
+			{"zero line limit", `{"expr": "{app=\"test\"}", "refId": "A", "maxLines": 0}`, 300, 300},
+			{"negative line limit", `{"expr": "{app=\"test\"}", "refId": "A", "maxLines": -5}`, 300, 300},
+			{"positive line limit wins", `{"expr": "{app=\"test\"}", "refId": "A", "maxLines": 50}`, 1000, 50},
+		}
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				queryContext := &backend.QueryDataRequest{
+					Queries: []backend.DataQuery{
+						{
+							JSON: []byte(tt.json),
+							TimeRange: backend.TimeRange{
+								From: time.Now().Add(-time.Hour),
+								To:   time.Now(),
+							},
+							Interval: time.Second,
+						},
+					},
+				}
+				models, err := parseQuery(queryContext, false, tt.fallback)
+				require.NoError(t, err)
+				require.Equal(t, tt.want, models[0].MaxLines)
+			})
+		}
 	})
 
 	t.Run("interpolate variables, range between 1s and 0.5s", func(t *testing.T) {

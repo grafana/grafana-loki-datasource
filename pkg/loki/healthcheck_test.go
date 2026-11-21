@@ -2,6 +2,7 @@ package loki
 
 import (
 	"context"
+	"errors"
 	"io"
 	"net/http"
 	"strings"
@@ -130,9 +131,47 @@ func Test_healthcheck(t *testing.T) {
 	})
 }
 
+func TestGetHealthCheckMessage(t *testing.T) {
+	logger := backend.NewLoggerWith("logger", "loki test")
+
+	t.Run("successful health check", func(t *testing.T) {
+		result := getHealthCheckMessage(nil, logger)
+
+		assert.Equal(t, backend.HealthStatusOk, result.Status)
+		assert.Equal(
+			t,
+			"Data source successfully connected.",
+			result.Message,
+		)
+	})
+
+	t.Run("failed health check includes underlying error", func(t *testing.T) {
+		err := errors.New(
+			"error from loki: TLS client certificate has expired",
+		)
+
+		result := getHealthCheckMessage(err, logger)
+
+		assert.Equal(t, backend.HealthStatusError, result.Status)
+		assert.Equal(
+			t,
+			"error from loki: TLS client certificate has expired",
+			result.Message,
+		)
+	})
+
+	t.Run("preserves other health check errors", func(t *testing.T) {
+		err := errors.New("invalid dataframe length, expected 1 got 0")
+
+		result := getHealthCheckMessage(err, logger)
+
+		assert.Equal(t, backend.HealthStatusError, result.Status)
+		assert.Equal(t, err.Error(), result.Message)
+	})
+}
+
 func getPluginContext() backend.PluginContext {
 	return backend.PluginContext{
-		OrgID:               0,
 		PluginID:            "loki",
 		User:                nil,
 		AppInstanceSettings: nil,

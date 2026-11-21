@@ -1,13 +1,8 @@
 import { groupBy, partition } from 'lodash';
 import { Observable, type Subscriber, type Subscription } from 'rxjs';
+import { v4 as uuidv4 } from 'uuid';
 
-import {
-  type DataQueryRequest,
-  type DataQueryResponse,
-  LoadingState,
-  type QueryResultMetaStat,
-  generateUUID,
-} from '@grafana/data';
+import { type DataQueryRequest, type DataQueryResponse, LoadingState, type QueryResultMetaStat } from '@grafana/data';
 import { config } from '@grafana/runtime';
 
 import { type LokiDatasource } from './datasource';
@@ -83,7 +78,7 @@ function splitQueriesByStreamShard(
   splittingTargets: LokiQuery[]
 ) {
   let shouldStop = false;
-  let mergedResponse: DataQueryResponse = { data: [], state: LoadingState.Streaming, key: generateUUID() };
+  let mergedResponse: DataQueryResponse = { data: [], state: LoadingState.Streaming, key: uuidv4() };
   let subquerySubscription: Subscription | null = null;
   let retriesMap = new Map<string, number>();
   let retryTimer: ReturnType<typeof setTimeout> | null = null;
