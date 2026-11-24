@@ -27,6 +27,12 @@ func NewLimitsContext() *LimitsContext {
 	return &LimitsContext{}
 }
 
+type QueryGroup struct {
+	EstimatedBytes string `json:"estimatedBytes,omitempty"`
+	From           int64  `json:"from"`
+	To             int64  `json:"to"`
+}
+
 type LokiQueryType string
 
 const (
@@ -71,6 +77,8 @@ type LokiDataQuery struct {
 	Step *string `json:"step,omitempty"`
 	// The full query plan for split/shard queries. Encoded and sent to Loki via `X-Loki-Query-Limits-Context` header. Requires "lokiQueryLimitsContext" feature flag
 	LimitsContext *LimitsContext `json:"limitsContext,omitempty"`
+	// The range of the split query this query belongs to, and the size estimate that Loki returned for it. Sent to Loki via `X-Loki-Query-Group-*` headers.
+	QueryGroup *QueryGroup `json:"queryGroup,omitempty"`
 	// A unique identifier for the query within the list of targets.
 	// In server side expressions, the refId is used as a variable name to identify results.
 	// By default, the UI will assign A->Z; however setting meaningful names may be useful.

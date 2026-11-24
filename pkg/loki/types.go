@@ -48,4 +48,5 @@ type lokiQuery struct {
 	SupportingQueryType SupportingQueryType
 	Scopes              []scope.ScopeFilter
 	LimitsContext       LimitsContext
+	QueryGroup          *dataquery.QueryGroup
 }

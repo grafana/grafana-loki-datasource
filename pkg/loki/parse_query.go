@@ -199,6 +199,7 @@ func parseQuery(queryContext *backend.QueryDataRequest, logqlScopesEnabled bool,
 			SupportingQueryType: supportingQueryType,
 			Scopes:              model.Scopes,
 			LimitsContext:       limitsConfig,
+			QueryGroup:          model.QueryGroup,
 		})
 	}
 

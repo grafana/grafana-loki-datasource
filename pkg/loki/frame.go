@@ -10,6 +10,18 @@ import (
 	"github.com/grafana/grafana-plugin-sdk-go/data"
 )
 
+const queryGroupFrameName = "loki-query-group"
+
+// newQueryGroupFrame carries Loki's size estimate for a query group to the
+// frontend, which sends it with the group's later splits. The frame has no
+// fields, so it also arrives when the query has no results.
+func newQueryGroupFrame(refID, estimatedBytes string) *data.Frame {
+	frame := data.NewFrame(queryGroupFrameName)
+	frame.RefID = refID
+	frame.Meta = &data.FrameMeta{Custom: map[string]string{"estimatedBytes": estimatedBytes}}
+	return frame
+}
+
 func adjustFrame(frame *data.Frame, query *lokiQuery, setMetricFrameName bool, logsDataplane bool) error {
 	// metric-fields have "timefield, valuefield"
 	// logs-fields have "labelsfield, timefield, ..."

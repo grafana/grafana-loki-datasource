@@ -65,8 +65,13 @@ func mergeLogsVolumeResults(query lokiQuery, parts []lokiQuery, results []*backe
 	series := make(map[data.Fingerprint]*data.Frame)
 	var stats []data.QueryStat
 	statIndexes := make(map[string]int)
+	var queryGroupFrame *data.Frame
 	for i, result := range results {
 		for _, frame := range result.Frames {
+			if frame.Name == queryGroupFrameName {
+				queryGroupFrame = frame
+				continue
+			}
 			for _, stat := range frame.Meta.Stats {
 				if index, ok := statIndexes[stat.DisplayName]; ok {
 					stats[index].Value += stat.Value
@@ -116,6 +121,9 @@ func mergeLogsVolumeResults(query lokiQuery, parts []lokiQuery, results []*backe
 	}
 	if len(merged.Frames) > 0 {
 		merged.Frames[0].Meta.Stats = stats
+	}
+	if queryGroupFrame != nil {
+		merged.Frames = append(merged.Frames, queryGroupFrame)
 	}
 	return merged
 }

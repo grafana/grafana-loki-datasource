@@ -96,6 +96,7 @@ func makeDataRequest(ctx context.Context, lokiDsUrl string, query lokiQuery) (*h
 	}
 
 	addQueryLimitsHeader(query, req)
+	addQueryGroupHeaders(query, req)
 
 	if query.SupportingQueryType != SupportingQueryNone {
 		value := getSupportingQueryHeaderValue(query.SupportingQueryType)
@@ -115,6 +116,21 @@ func addQueryLimitsHeader(query lokiQuery, req *http.Request) {
 		if err == nil {
 			req.Header.Set("X-Loki-Query-Limits-Context", string(queryLimitStr))
 		}
+	}
+}
+
+const queryGroupEstimatedBytesHeader = "X-Loki-Query-Group-Estimated-Bytes"
+
+// addQueryGroupHeaders sends the range of the split query that this request
+// belongs to, so that Loki can gate and look up hints once for the whole query.
+func addQueryGroupHeaders(query lokiQuery, req *http.Request) {
+	if query.QueryGroup == nil {
+		return
+	}
+	req.Header.Set("X-Loki-Query-Group-From", strconv.FormatInt(query.QueryGroup.From, 10))
+	req.Header.Set("X-Loki-Query-Group-To", strconv.FormatInt(query.QueryGroup.To, 10))
+	if query.QueryGroup.EstimatedBytes != "" {
+		req.Header.Set(queryGroupEstimatedBytesHeader, query.QueryGroup.EstimatedBytes)
 	}
 }
 
@@ -240,6 +256,9 @@ func (api *LokiAPI) DataQuery(ctx context.Context, query lokiQuery, responseOpts
 	instrumentation.UpdatePluginParsingResponseDurationSeconds(ctx, time.Since(start), "ok")
 	api.log.Info("Response parsed from loki", "duration", time.Since(start), "framesLength", len(res.Frames), "stage", stageParseResponse)
 
+	if estimatedBytes := resp.Header.Get(queryGroupEstimatedBytesHeader); estimatedBytes != "" {
+		res.Frames = append(res.Frames, newQueryGroupFrame(query.RefID, estimatedBytes))
+	}
 	return &res, nil
 }
 

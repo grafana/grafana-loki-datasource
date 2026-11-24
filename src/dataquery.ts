@@ -63,6 +63,14 @@ export interface LokiDataQuery extends common.DataQuery {
    */
   maxLines?: number;
   /**
+   * The range of the split query this query belongs to, and the size estimate that Loki returned for it. Sent to Loki via `X-Loki-Query-Group-*` headers.
+   */
+  queryGroup?: {
+    estimatedBytes?: string;
+    from: number;
+    to: number;
+  };
+  /**
    * @deprecated, now use queryType.
    */
   range?: boolean;
