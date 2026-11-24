@@ -8,8 +8,11 @@ jest.mock('@grafana/runtime', () => ({
   ...jest.requireActual('@grafana/runtime'),
   getTemplateSrv: () => ({
     replace: (val: string) => {
-      return val;
+      return val.replace('${__value.raw}', '1234');
     },
+  }),
+  getDataSourceSrv: () => ({
+    getInstanceSettings: () => ({ name: 'Tempo', type: 'tempo' }),
   }),
 }));
 
@@ -45,5 +48,29 @@ describe('DebugSection', () => {
     const rows = screen.getAllByRole('row');
     expect(rows.length).toBe(4);
     expect(rows[1]).toHaveTextContent('http://localhost/trace/${__value.raw}');
+  });
+
+  it('shows an Explore link for an internal Tempo link', async () => {
+    render(
+      <DebugSection
+        derivedFields={[
+          {
+            matcherRegex: 'traceId=(\\w+)',
+            name: 'traceId',
+            url: '${__value.raw}',
+            datasourceUid: 'tempo-uid',
+          },
+        ]}
+      />
+    );
+
+    await userEvent.type(screen.getByRole('textbox'), 'traceId=1234');
+
+    const link = screen.getByRole('link', { name: /explore\?left=/ });
+    expect(link).toHaveAttribute(
+      'href',
+      expect.stringContaining(encodeURIComponent('"query":"1234","queryType":"traceql"'))
+    );
+    expect(link).toHaveAttribute('href', expect.stringContaining(encodeURIComponent('"datasource":"tempo-uid"')));
   });
 });

@@ -1,6 +1,7 @@
 import React, { type ReactNode, useState } from 'react';
 
-import { getTemplateSrv } from '@grafana/runtime';
+import { type Field, FieldType, mapInternalLinkToExplore } from '@grafana/data';
+import { getDataSourceSrv, getTemplateSrv } from '@grafana/runtime';
 import { InlineField, TextArea } from '@grafana/ui';
 
 import { type DerivedFieldConfig } from '../types';
@@ -85,14 +86,42 @@ function makeDebugFields(derivedFields: DerivedFieldConfig[], debugText: string)
         const value = testMatch && testMatch[1];
 
         if (value) {
-          href = getTemplateSrv().replace(field.url, {
+          const scopedVars = {
             __value: {
               value: {
                 raw: value,
               },
               text: 'Raw value',
             },
-          });
+          };
+          const replaceVariables = (text: string) => getTemplateSrv().replace(text, scopedVars);
+
+          if (field.datasourceUid) {
+            const datasource = getDataSourceSrv().getInstanceSettings(field.datasourceUid);
+            const queryType =
+              datasource?.type === 'tempo'
+                ? 'traceql'
+                : datasource?.type === 'grafana-x-ray-datasource'
+                  ? 'getTrace'
+                  : undefined;
+            const internalLink = {
+              datasourceUid: field.datasourceUid,
+              datasourceName: datasource?.name ?? 'Data source not found',
+              query: {
+                query: field.url,
+                queryType,
+              },
+            };
+            href = mapInternalLinkToExplore({
+              link: { title: '', url: '', internal: internalLink },
+              internalLink,
+              scopedVars,
+              field: { name: field.name, type: FieldType.string, config: {}, values: [value] } as Field,
+              replaceVariables,
+            }).href;
+          } else {
+            href = replaceVariables(field.url ?? '');
+          }
         }
         const debugFiled: DebugField = {
           name: field.name,
