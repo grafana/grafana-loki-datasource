@@ -1,0 +1,194 @@
+{
+  "$schema": "https://raw.githubusercontent.com/grafana/dsconfig/refs/tags/dsconfig/v0.0.12/dsconfig/schema.json",
+  "schemaVersion": "v1",
+  "pluginType": "loki",
+  "pluginName": "Loki",
+  "docURL": "https://grafana.com/docs/grafana/latest/datasources/loki/configure-loki-data-source/",
+  "baseFields": [
+    {
+      "from": "plugin_sdk_settings",
+      "exclude": [
+        "plugin_sdk_settings.access",
+        "plugin_sdk_settings.withCredentials",
+        "plugin_sdk_settings.sigV4Auth"
+      ],
+      "patch": {
+        "plugin_sdk_settings.url": {
+          "label": "Loki server URL",
+          "description": "URL of your Loki server, for example http://localhost:3100.",
+          "placeholder": "http://localhost:3100"
+        }
+      }
+    }
+  ],
+  "fields": [
+    {
+      "id": "jsonData_enableSecureSocksProxy",
+      "key": "enableSecureSocksProxy",
+      "label": "Secure Socks Proxy",
+      "description": "Connect through the Grafana private data source connect proxy. Only shown when the proxy is enabled on the Grafana instance.",
+      "valueType": "boolean",
+      "target": "jsonData",
+      "defaultValue": false,
+      "ui": {
+        "component": "switch"
+      }
+    },
+    {
+      "id": "jsonData_manageAlerts",
+      "key": "manageAlerts",
+      "label": "Manage alert rules in Alerting UI",
+      "description": "Manage alert rules for this data source. Frontend-only; falls back to the Grafana instance default when unset.",
+      "valueType": "boolean",
+      "target": "jsonData",
+      "tags": ["frontend-only"],
+      "ui": {
+        "component": "switch"
+      }
+    },
+    {
+      "id": "jsonData_maxLines",
+      "key": "maxLines",
+      "label": "Maximum lines",
+      "description": "Default line limit for queries that set none. The editor saves a string; a number is also accepted. Missing or non-positive values fall back to 1000.",
+      "valueType": "string",
+      "target": "jsonData",
+      "defaultValue": "1000",
+      "validations": [
+        {
+          "type": "pattern",
+          "pattern": "^[1-9][0-9]*$",
+          "message": "Maximum lines must be a positive whole number."
+        }
+      ],
+      "ui": {
+        "component": "input",
+        "placeholder": "1000"
+      }
+    },
+    {
+      "id": "jsonData_derivedFields",
+      "key": "derivedFields",
+      "label": "Derived fields",
+      "description": "Extract values from log lines or labels and turn them into links. Frontend-only.",
+      "valueType": "array",
+      "target": "jsonData",
+      "tags": ["frontend-only"],
+      "item": {
+        "valueType": "object",
+        "fields": [
+          {
+            "id": "jsonData_derivedFields.item.name",
+            "key": "name",
+            "label": "Name",
+            "valueType": "string",
+            "isItemField": true,
+            "required": true,
+            "ui": {
+              "component": "input",
+              "placeholder": "Field name"
+            }
+          },
+          {
+            "id": "jsonData_derivedFields.item.matcherType",
+            "key": "matcherType",
+            "label": "Type",
+            "description": "Match a regular expression against the log line, or read a label.",
+            "valueType": "string",
+            "isItemField": true,
+            "defaultValue": "regex",
+            "validations": [
+              {
+                "type": "allowedValues",
+                "values": ["regex", "label"]
+              }
+            ],
+            "ui": {
+              "component": "select",
+              "options": [
+                { "label": "Regex in log line", "value": "regex" },
+                { "label": "Label", "value": "label" }
+              ]
+            }
+          },
+          {
+            "id": "jsonData_derivedFields.item.matcherRegex",
+            "key": "matcherRegex",
+            "label": "Regex",
+            "description": "Regex to capture part of the log line, or the label name when the type is label. Captured groups can be used in the URL.",
+            "valueType": "string",
+            "isItemField": true,
+            "required": true,
+            "ui": {
+              "component": "input"
+            }
+          },
+          {
+            "id": "jsonData_derivedFields.item.url",
+            "key": "url",
+            "label": "URL",
+            "description": "Link template. For an internal link, the query sent to the linked data source.",
+            "valueType": "string",
+            "isItemField": true,
+            "ui": {
+              "component": "input",
+              "placeholder": "http://example.com/${__value.raw}"
+            }
+          },
+          {
+            "id": "jsonData_derivedFields.item.urlDisplayLabel",
+            "key": "urlDisplayLabel",
+            "label": "URL label",
+            "description": "Overrides the link button label.",
+            "valueType": "string",
+            "isItemField": true,
+            "ui": {
+              "component": "input"
+            }
+          },
+          {
+            "id": "jsonData_derivedFields.item.datasourceUid",
+            "key": "datasourceUid",
+            "label": "Internal link data source",
+            "description": "UID of the data source to link to. Setting it makes the link internal.",
+            "valueType": "string",
+            "isItemField": true,
+            "ui": {
+              "component": "input"
+            }
+          },
+          {
+            "id": "jsonData_derivedFields.item.targetBlank",
+            "key": "targetBlank",
+            "label": "Open in new tab",
+            "valueType": "boolean",
+            "isItemField": true,
+            "ui": {
+              "component": "switch"
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "groups": [
+    {
+      "id": "additional-settings",
+      "title": "Additional settings",
+      "order": 1,
+      "optional": true,
+      "fieldRefs": [
+        "jsonData_enableSecureSocksProxy",
+        "jsonData_manageAlerts",
+        "jsonData_maxLines",
+        "jsonData_derivedFields"
+      ]
+    }
+  ],
+  "instructions": [
+    {
+      "msg": "Supported auth methods: none, basic auth (root.basicAuth=true with basicAuthUser and secureJsonData.basicAuthPassword) and forwarding the user's OAuth identity (jsonData.oauthPassThru=true). Enable at most one of basicAuth and oauthPassThru.",
+      "tags": ["llm", "auth"]
+    }
+  ]
+}
