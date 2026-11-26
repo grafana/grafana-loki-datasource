@@ -11,12 +11,14 @@ replace github.com/hashicorp/memberlist => github.com/grafana/memberlist v0.3.1-
 
 require (
 	github.com/gorilla/websocket v1.5.4-0.20250319132907-e064f32e3674
+	github.com/grafana/dsconfig/schema v0.0.13
 	github.com/grafana/dskit v0.0.0-20260427162712-0457a92dacc3
 	github.com/grafana/grafana-plugin-sdk-go v0.296.4
 	github.com/grafana/grafana-prometheus-datasource/pkg/promlib v0.0.19
 	github.com/grafana/grafana/apps/scope v0.0.0-20260427171703-d4f46decefcb
 	github.com/grafana/loki/v3 v3.7.7
 	github.com/json-iterator/go v1.1.12
+	github.com/magefile/mage v1.17.2
 	github.com/prometheus/client_golang v1.24.1
 	github.com/prometheus/prometheus v0.314.0
 	github.com/stretchr/testify v1.12.1
@@ -87,6 +89,7 @@ require (
 	github.com/google/go-cmp v0.7.0 // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/gorilla/mux v1.8.1 // indirect
+	github.com/grafana/dsconfig/dsconfig v0.0.12 // indirect
 	github.com/grafana/gomemcache v0.0.0-20251127154401-74f93547077b // indirect
 	github.com/grafana/grafana/pkg/apimachinery v0.0.0-20260118065639-60cb766a97d6 // indirect
 	github.com/grafana/jsonparser v0.0.0-20241004153430-023329977675 // indirect
@@ -119,7 +122,6 @@ require (
 	github.com/jszwedko/go-datemath v0.1.1-0.20260113213115-7f666eef0523 // indirect
 	github.com/klauspost/compress v1.20.4 // indirect
 	github.com/klauspost/cpuid/v2 v2.4.0 // indirect
-	github.com/magefile/mage v1.17.2 // indirect
 	github.com/mattetti/filebuffer v1.0.1 // indirect
 	github.com/mattn/go-colorable v0.1.15 // indirect
 	github.com/mattn/go-isatty v0.0.24 // indirect

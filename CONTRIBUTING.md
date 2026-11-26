@@ -54,6 +54,40 @@ This project adheres to the [Grafana Code of Conduct](https://github.com/grafana
    mage -v
    ```
 
+1. Run the backend tests, including the schema conformance tests:
+
+   ```shell
+   go test ./pkg/...
+   ```
+
+## Data source configuration schema
+
+`pkg/schema/dsconfig.json` is the single source of truth for the data source configuration (`root`, `jsonData` and `secureJsonData`). Provisioning tools, docs and automation read it. See the [dsconfig README](https://github.com/grafana/dsconfig/tree/main/dsconfig), the [property reference](https://github.com/grafana/dsconfig/blob/main/dsconfig/schema.md) and the [JSON Schema](https://github.com/grafana/dsconfig/blob/main/dsconfig/schema.json).
+
+The `$schema` URL is pinned to a dsconfig tag. Keep it equal to the `github.com/grafana/dsconfig/dsconfig` version in `go.mod`, and bump them together.
+
+### Layout
+
+| File | Purpose |
+| --- | --- |
+| `pkg/schema/dsconfig.json` | The schema. Edit this. |
+| `pkg/schema/dsconfig_test.go` | Conformance test wiring and `SecureKeys`. |
+| `pkg/schema/models/settings.go` | Test-only model of the plugin's `jsonData` keys. The backend does not read it. |
+| `pkg/schema/*.gen.json` | Generated. Never hand-edit. The build copies them into `dist/schema/`. |
+
+### Adding a new settings option
+
+1. Declare the field in `dsconfig.json` under `fields` and add its id to `groups[].fieldRefs`. Ids follow `<target>_<key>`.
+2. Add a struct field with a json tag equal to the schema `key` in `pkg/schema/models/settings.go`. Secrets have no struct field; add the key to `SecureKeys` in `dsconfig_test.go`.
+3. Run `go generate ./pkg/schema/...` and commit the regenerated files.
+4. Run `go test ./pkg/schema/...`.
+
+### When the conformance suite fails
+
+- `SchemaArtifactInSync`: the `*.gen.json` files are stale. Run `go generate ./pkg/schema/...`.
+- `JSONDataMatchesStruct` / `JSONDataTypesMatchStruct`: a schema `jsonData` key and the struct json tags differ, or their types do. Fix the schema or the struct.
+- `SecureValuesMatchLoadSettings`: `SecureKeys` and the schema `secureJsonData` keys differ. Update `SecureKeys`.
+
 ## Local development environment
 
 `npm run server` starts a local Loki instance and a Grafana instance with the plugin pre-provisioned:
