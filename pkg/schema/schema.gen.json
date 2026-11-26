@@ -105,7 +105,7 @@
               "description": "Default line limit for queries that set none. The editor saves a string; a number is also accepted. Missing or non-positive values fall back to 1000.",
               "type": "string",
               "default": "1000",
-              "pattern": "^[0-9]+$"
+              "pattern": "^[1-9][0-9]*$"
             },
             "oauthPassThru": {
               "description": "Forward the signed-in user's upstream OAuth identity (access token) to the datasource.",
