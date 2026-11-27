@@ -23,8 +23,8 @@ import (
 	"github.com/grafana/grafana-plugin-sdk-go/backend/log"
 	"github.com/grafana/grafana-plugin-sdk-go/backend/tracing"
 
-	"github.com/grafana/grafana-prometheus-datasource/pkg/promlib/converter"
 	"github.com/grafana/grafana-loki-datasource/pkg/loki/instrumentation"
+	"github.com/grafana/grafana-prometheus-datasource/pkg/promlib/converter"
 )
 
 type LokiAPI struct {
@@ -189,10 +189,7 @@ func (api *LokiAPI) DataQuery(ctx context.Context, query lokiQuery, responseOpts
 			lp = append(lp, "statusCode", resp.StatusCode)
 		}
 		api.log.Debug("Error received from Loki", lp...)
-		var urlErr *url.Error
-		// net/http reports an unsupported scheme, such as from an empty URL, only as an untyped error string.
-		unsupportedScheme := errors.As(err, &urlErr) && urlErr.Err != nil && strings.HasPrefix(urlErr.Err.Error(), "unsupported protocol scheme")
-		if backend.IsDownstreamHTTPError(err) || unsupportedScheme {
+		if backend.IsDownstreamHTTPError(err) || isUnsupportedScheme(err) {
 			err = backend.DownstreamError(err)
 		}
 		res := backend.ErrorResponseWithErrorSource(err)
@@ -243,6 +240,12 @@ func (api *LokiAPI) DataQuery(ctx context.Context, query lokiQuery, responseOpts
 	return &res, nil
 }
 
+func isUnsupportedScheme(err error) bool {
+	var urlErr *url.Error
+	// net/http reports an unsupported scheme, such as from an empty URL, only as an untyped error string.
+	return errors.As(err, &urlErr) && urlErr.Err != nil && strings.HasPrefix(urlErr.Err.Error(), "unsupported protocol scheme")
+}
+
 func makeRawRequest(ctx context.Context, lokiDsUrl string, resourcePath string) (*http.Request, error) {
 	lokiUrl, err := url.Parse(lokiDsUrl)
 	if err != nil {
@@ -288,6 +291,9 @@ func (api *LokiAPI) RawQuery(ctx context.Context, resourcePath string) (RawLokiR
 			lp = append(lp, "statusCode", resp.StatusCode)
 		}
 		api.log.Debug("Error received from Loki", lp...)
+		if isUnsupportedScheme(err) {
+			err = backend.DownstreamError(err)
+		}
 		return RawLokiResponse{}, err
 	}
 
