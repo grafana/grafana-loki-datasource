@@ -11,10 +11,10 @@ import (
 	"testing"
 	"time"
 
+	"github.com/grafana/grafana-loki-datasource/pkg/loki/kinds/dataquery"
 	"github.com/grafana/grafana-plugin-sdk-go/backend"
 	"github.com/grafana/grafana-plugin-sdk-go/backend/httpclient"
 	"github.com/grafana/grafana-plugin-sdk-go/backend/tracing"
-	"github.com/grafana/grafana-loki-datasource/pkg/loki/kinds/dataquery"
 	"github.com/stretchr/testify/require"
 )
 
@@ -453,7 +453,7 @@ func TestErrorSources(t *testing.T) {
 	})
 }
 
-func TestDataQueryRequestErrorSource(t *testing.T) {
+func TestRequestErrorSource(t *testing.T) {
 	sdkClient, err := httpclient.New()
 	require.NoError(t, err)
 
@@ -509,13 +509,36 @@ func TestDataQueryRequestErrorSource(t *testing.T) {
 	}
 
 	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
+		t.Run(tc.name+"/query", func(t *testing.T) {
 			api := newLokiAPI(tc.client, tc.url, backend.NewLoggerWith("logger", "test"), tracing.DefaultTracer())
 
 			res, err := api.DataQuery(context.Background(), lokiQuery{QueryType: QueryTypeRange}, ResponseOpts{})
 			require.NoError(t, err)
 			require.ErrorContains(t, res.Error, tc.wantErr)
 			require.Equal(t, tc.wantDownstream, res.ErrorSource == backend.ErrorSourceDownstream, "error source %q", res.ErrorSource)
+		})
+		t.Run(tc.name+"/resource", func(t *testing.T) {
+			ds := &DataSource{
+				info:   &datasourceInfo{HTTPClient: tc.client, URL: tc.url},
+				logger: backend.NewLoggerWith("logger", "test"),
+				tracer: tracing.DefaultTracer(),
+			}
+			handler, err := backend.HandlerFromMiddlewares(
+				&backend.Handlers{CallResourceHandler: ds},
+				backend.NewErrorSourceMiddleware(),
+			)
+			require.NoError(t, err)
+
+			err = handler.CallResource(context.Background(), &backend.CallResourceRequest{
+				Method: http.MethodGet,
+				Path:   "labels",
+				URL:    "labels",
+			}, backend.CallResourceResponseSenderFunc(func(*backend.CallResourceResponse) error {
+				t.Fatal("unexpected response for a failed resource request")
+				return nil
+			}))
+			require.ErrorContains(t, err, tc.wantErr)
+			require.Equal(t, tc.wantDownstream, backend.IsDownstreamError(err), "error: %v", err)
 		})
 	}
 }
